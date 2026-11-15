@@ -1,0 +1,244 @@
+{
+  "extName": {
+    "message": "ChalaTabs",
+    "description": "Nombre de la extensión"
+  },
+  "extDescription": {
+    "message": "Organiza pestañas en espacios de trabajo, suspende pestañas inactivas para ahorrar RAM y busca al instante. 100% gratis y open source.",
+    "description": "Descripción de la extensión"
+  },
+  "searchPlaceholder": {
+    "message": "Buscar pestañas abiertas o espacios de trabajo...",
+    "description": "Placeholder del buscador instantáneo"
+  },
+  "openSidePanelTitle": {
+    "message": "Abrir en panel lateral",
+    "description": "Tooltip para abrir sidePanel"
+  },
+  "activeTabsLabel": {
+    "message": "Activas",
+    "description": "Etiqueta de pestañas activas"
+  },
+  "suspendedTabsLabel": {
+    "message": "Suspendidas",
+    "description": "Etiqueta de pestañas suspendidas"
+  },
+  "ramSavedLabel": {
+    "message": "RAM ahorrada",
+    "description": "Etiqueta de memoria RAM estimada ahorrada"
+  },
+  "suspendInactiveBtn": {
+    "message": "Suspender pestañas inactivas",
+    "description": "Botón principal de suspensión"
+  },
+  "autoSuspendLabel": {
+    "message": "Auto-suspensión:",
+    "description": "Etiqueta del selector de auto-suspensión"
+  },
+  "autoSuspendOff": {
+    "message": "Desactivado",
+    "description": "Auto-suspensión desactivada"
+  },
+  "autoSuspend15": {
+    "message": "15 min",
+    "description": "Auto-suspensión a los 15 minutos"
+  },
+  "autoSuspend30": {
+    "message": "30 min",
+    "description": "Auto-suspensión a los 30 minutos"
+  },
+  "autoSuspend60": {
+    "message": "60 min",
+    "description": "Auto-suspensión a los 60 minutos"
+  },
+  "tabOpenTabs": {
+    "message": "Pestañas Abiertas",
+    "description": "Pestaña de vista para pestañas abiertas"
+  },
+  "tabWorkspaces": {
+    "message": "Workspaces",
+    "description": "Pestaña de vista para espacios de trabajo"
+  },
+  "saveSessionBtn": {
+    "message": "+ Guardar sesión actual",
+    "description": "Botón para guardar sesión en workspace"
+  },
+  "exportBtn": {
+    "message": "Exportar",
+    "description": "Botón para exportar respaldo JSON"
+  },
+  "importBtn": {
+    "message": "Importar",
+    "description": "Botón para importar respaldo JSON"
+  },
+  "modalSaveTitle": {
+    "message": "Guardar sesión como Workspace",
+    "description": "Título del modal de guardar sesión"
+  },
+  "workspaceNameLabel": {
+    "message": "Nombre del Workspace",
+    "description": "Etiqueta del campo de nombre"
+  },
+  "workspaceNamePlaceholder": {
+    "message": "Ej. Investigación, Trabajo, Finanzas...",
+    "description": "Placeholder para nombre de workspace"
+  },
+  "workspaceColorLabel": {
+    "message": "Color de etiqueta",
+    "description": "Etiqueta del selector de color"
+  },
+  "selectTabsLabel": {
+    "message": "Pestañas a incluir",
+    "description": "Etiqueta de lista de selección de pestañas"
+  },
+  "selectAllBtn": {
+    "message": "Todas",
+    "description": "Seleccionar todas las pestañas"
+  },
+  "deselectAllBtn": {
+    "message": "Ninguna",
+    "description": "Deseleccionar todas las pestañas"
+  },
+  "cancelBtn": {
+    "message": "Cancelar",
+    "description": "Botón cancelar"
+  },
+  "saveBtn": {
+    "message": "Guardar Workspace",
+    "description": "Botón guardar"
+  },
+  "openInCurrentWindow": {
+    "message": "Ventana actual",
+    "description": "Abrir workspace en la ventana actual"
+  },
+  "openInNewWindow": {
+    "message": "Ventana nueva",
+    "description": "Abrir workspace en una ventana nueva"
+  },
+  "addCurrentTabToWorkspace": {
+    "message": "+ Añadir pestaña actual",
+    "description": "Añadir la pestaña activa al workspace"
+  },
+  "deleteWorkspaceTitle": {
+    "message": "Eliminar Workspace",
+    "description": "Título del botón de eliminar workspace"
+  },
+  "removeTabFromWorkspace": {
+    "message": "Quitar pestaña del Workspace",
+    "description": "Tooltip para quitar pestaña individual"
+  },
+  "noOpenTabsMatch": {
+    "message": "No hay pestañas abiertas que coincidan con tu búsqueda.",
+    "description": "Estado vacío al filtrar pestañas abiertas"
+  },
+  "noWorkspacesYet": {
+    "message": "Aún no tienes Workspaces guardados. Crea uno con el botón superior para organizar tus sesiones.",
+    "description": "Estado vacío sin workspaces"
+  },
+  "noWorkspacesMatch": {
+    "message": "No se encontraron Workspaces o pestañas guardadas para esa búsqueda.",
+    "description": "Estado vacío al filtrar workspaces"
+  },
+  "suspendSingleTabTitle": {
+    "message": "Suspender pestaña para liberar RAM",
+    "description": "Tooltip para suspender una pestaña"
+  },
+  "closeTabTitle": {
+    "message": "Cerrar pestaña",
+    "description": "Tooltip para cerrar una pestaña"
+  },
+  "protectedTabCloseTitle": {
+    "message": "Pestaña interna protegida por el navegador (no se puede cerrar)",
+    "description": "Tooltip cuando la pestaña tiene un esquema interno protegido"
+  },
+  "protectedTabBadge": {
+    "message": "Sistema",
+    "description": "Insignia de pestaña interna protegida por el navegador"
+  },
+  "tabSuspendedBadge": {
+    "message": "Suspendida",
+    "description": "Insignia de pestaña suspendida"
+  },
+  "tabPinnedBadge": {
+    "message": "Fijada",
+    "description": "Insignia de pestaña fijada"
+  },
+  "tabAudibleBadge": {
+    "message": "Audio",
+    "description": "Insignia de pestaña reproduciendo audio"
+  },
+  "windowGroupTitle": {
+    "message": "Ventana $NUM$",
+    "description": "Título del grupo de ventana",
+    "placeholders": {
+      "num": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "searchResultsOpenTabs": {
+    "message": "Pestañas abiertas",
+    "description": "Sección de resultados en pestañas abiertas"
+  },
+  "searchResultsWorkspaces": {
+    "message": "En Workspaces guardados",
+    "description": "Sección de resultados en workspaces guardados"
+  },
+  "donatePaypalBtn": {
+    "message": "Apoyar el proyecto (PayPal)",
+    "description": "Botón de donación vía PayPal"
+  },
+  "githubRepoLink": {
+    "message": "Código Abierto en GitHub",
+    "description": "Enlace al repositorio de GitHub"
+  },
+  "suiteMention": {
+    "message": "Suite Chala:",
+    "description": "Mención discreta a la suite Chala"
+  },
+  "toastSuspendedCount": {
+    "message": "Se suspendieron $COUNT$ pestañas inactivas.",
+    "description": "Notificación de pestañas suspendidas",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4"
+      }
+    }
+  },
+  "toastNoTabsToSuspend": {
+    "message": "No hay pestañas inactivas elegibles para suspender.",
+    "description": "Notificación cuando no hay pestañas elegibles"
+  },
+  "toastWorkspaceSaved": {
+    "message": "Workspace guardado correctamente.",
+    "description": "Notificación al guardar workspace"
+  },
+  "toastWorkspaceDeleted": {
+    "message": "Workspace eliminado.",
+    "description": "Notificación al eliminar workspace"
+  },
+  "toastTabAddedToWorkspace": {
+    "message": "Pestaña añadida al Workspace.",
+    "description": "Notificación al añadir pestaña a workspace"
+  },
+  "toastBackupExported": {
+    "message": "Respaldo JSON exportado.",
+    "description": "Notificación al exportar respaldo"
+  },
+  "toastBackupImported": {
+    "message": "Se importaron $COUNT$ Workspaces.",
+    "description": "Notificación al importar respaldo",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "toastBackupError": {
+    "message": "El archivo JSON no tiene un formato válido de ChalaTabs.",
+    "description": "Error al importar respaldo"
+  }
+}

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChalaTabs</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Cabecera de marca Escudo Cibernetico -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 128 128" width="26" height="26" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="hdrShieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#10B981" />
+                <stop offset="100%" stop-color="#06B6D4" />
+              </linearGradient>
+            </defs>
+            <path d="M64 10 L110 26 V62 C110 92 90 110 64 120 C38 110 18 92 18 62 V26 Z" fill="url(#hdrShieldGrad)" />
+            <path d="M64 19 L101 32 V61 C101 86 84 102 64 110 C44 102 27 86 27 61 V32 Z" fill="#0F172A" />
+            <rect x="42" y="42" width="38" height="10" rx="3" fill="#1E293B" stroke="#06B6D4" stroke-width="3" />
+            <rect x="48" y="56" width="38" height="12" rx="3" fill="#1E293B" stroke="#10B981" stroke-width="3" />
+            <rect x="42" y="72" width="44" height="18" rx="4" fill="#1E293B" stroke="#F8FAFC" stroke-width="3" />
+            <rect x="48" y="78" width="16" height="5" rx="2.5" fill="#10B981" />
+          </svg>
+        </span>
+        <div class="brand-text">
+          <h1 data-i18n="extName">ChalaTabs</h1>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btnExport" class="icon-btn" type="button" data-i18n-title="exportBtn" title="Exportar">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span class="btn-mini-label" data-i18n="exportBtn">Exportar</span>
+        </button>
+
+        <button id="btnImport" class="icon-btn" type="button" data-i18n-title="importBtn" title="Importar">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          <span class="btn-mini-label" data-i18n="importBtn">Importar</span>
+        </button>
+        <input id="importFileInput" type="file" accept=".json,application/json" hidden />
+
+        <button id="btnSidePanel" class="icon-btn icon-btn-accent" type="button" data-i18n-title="openSidePanelTitle" title="Abrir en panel lateral">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <line x1="15" y1="3" x2="15" y2="21" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Buscador instantaneo -->
+    <section class="search-section">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          id="searchInput"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          autofocus
+          data-i18n-placeholder="searchPlaceholder"
+          placeholder="Buscar pestañas abiertas o espacios de trabajo..."
+        />
+        <button id="btnClearSearch" class="clear-search-btn hidden" type="button" aria-label="Limpiar búsqueda">
+          &times;
+        </button>
+      </div>
+    </section>
+
+    <!-- Panel de ahorro de RAM y suspension -->
+    <section class="ram-panel">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span class="metric-label" data-i18n="activeTabsLabel">Activas</span>
+          <strong id="metricActiveCount" class="metric-value metric-accent">0</strong>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label" data-i18n="suspendedTabsLabel">Suspendidas</span>
+          <strong id="metricSuspendedCount" class="metric-value metric-primary">0</strong>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label" data-i18n="ramSavedLabel">RAM ahorrada</span>
+          <strong id="metricRamSaved" class="metric-value metric-primary">0 MB</strong>
+        </div>
+      </div>
+
+      <div class="suspend-controls">
+        <button id="btnSuspendInactive" class="btn-primary" type="button">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+          <span data-i18n="suspendInactiveBtn">Suspender pestañas inactivas</span>
+        </button>
+
+        <label class="autosuspend-control">
+          <span data-i18n="autoSuspendLabel">Auto-suspensión:</span>
+          <select id="selectAutoSuspend">
+            <option value="0" data-i18n="autoSuspendOff">Desactivado</option>
+            <option value="15" data-i18n="autoSuspend15">15 min</option>
+            <option value="30" data-i18n="autoSuspend30">30 min</option>
+            <option value="60" data-i18n="autoSuspend60">60 min</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <!-- Navegacion de vistas -->
+    <nav class="view-tabs" role="tablist">
+      <button id="tabBtnOpen" class="view-tab active" type="button" role="tab" aria-selected="true">
+        <span data-i18n="tabOpenTabs">Pestañas Abiertas</span>
+        <span id="badgeOpenCount" class="tab-counter">0</span>
+      </button>
+      <button id="tabBtnWorkspaces" class="view-tab" type="button" role="tab" aria-selected="false">
+        <span data-i18n="tabWorkspaces">Workspaces</span>
+        <span id="badgeWorkspaceCount" class="tab-counter">0</span>
+      </button>
+    </nav>
+
+    <!-- Contenido principal scrollable -->
+    <main class="main-content">
+      <!-- Vista de Pestanas Abiertas (y resultados unificados al buscar) -->
+      <section id="viewOpenTabs" class="view-pane active">
+        <div id="openTabsContainer" class="list-container"></div>
+      </section>
+
+      <!-- Vista de Workspaces -->
+      <section id="viewWorkspaces" class="view-pane hidden">
+        <div class="workspace-toolbar">
+          <button id="btnOpenSaveModal" class="btn-secondary-accent" type="button">
+            <span data-i18n="saveSessionBtn">+ Guardar sesión actual</span>
+          </button>
+        </div>
+        <div id="workspacesContainer" class="list-container"></div>
+      </section>
+    </main>
+
+    <!-- Modal para guardar sesion actual como Workspace -->
+    <div id="saveWorkspaceModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitleHeading">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 id="modalTitleHeading" data-i18n="modalSaveTitle">Guardar sesión como Workspace</h2>
+          <button id="btnCloseModalX" class="modal-close-x" type="button" aria-label="Cerrar">&times;</button>
+        </div>
+
+        <form id="saveWorkspaceForm" class="modal-body">
+          <div class="form-group">
+            <label for="workspaceNameInput" data-i18n="workspaceNameLabel">Nombre del Workspace</label>
+            <input
+              id="workspaceNameInput"
+              type="text"
+              maxlength="48"
+              required
+              data-i18n-placeholder="workspaceNamePlaceholder"
+              placeholder="Ej. Investigación, Trabajo, Finanzas..."
+            />
+          </div>
+
+          <div class="form-group">
+            <span class="form-label" data-i18n="workspaceColorLabel">Color de etiqueta</span>
+            <div id="colorPicker" class="color-picker"></div>
+          </div>
+
+          <div class="form-group">
+            <div class="select-tabs-header">
+              <span class="form-label" data-i18n="selectTabsLabel">Pestañas a incluir</span>
+              <div class="select-tabs-actions">
+                <button id="btnSelectAllTabs" class="link-btn" type="button" data-i18n="selectAllBtn">Todas</button>
+                <span class="sep">&middot;</span>
+                <button id="btnDeselectAllTabs" class="link-btn" type="button" data-i18n="deselectAllBtn">Ninguna</button>
+              </div>
+            </div>
+            <div id="modalTabsList" class="modal-tabs-list"></div>
+          </div>
+
+          <div class="modal-footer">
+            <button id="btnCancelModal" class="btn-ghost" type="button" data-i18n="cancelBtn">Cancelar</button>
+            <button id="btnConfirmSaveWorkspace" class="btn-primary" type="submit" data-i18n="saveBtn">Guardar Workspace</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Notificacion Toast -->
+    <div id="toastBanner" class="toast hidden" role="status" aria-live="polite"></div>
+
+    <!-- Pie de pagina de comunidad y donaciones -->
+    <footer class="app-footer">
+      <div class="footer-top">
+        <a id="linkPaypalDonate" class="donate-btn" href="https://www.paypal.com/ncp/payment/VSWPSS7D4ZRH2" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+          </svg>
+          <span data-i18n="donatePaypalBtn">Apoyar el proyecto (PayPal)</span>
+        </a>
+
+        <a id="linkGithubRepo" class="footer-link" href="https://github.com/joelchala/ChalaTabs" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+            <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.26 5.68.42.36.78 1.07.78 2.15 0 1.55-.01 2.8-.01 3.18 0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z" />
+          </svg>
+          <span data-i18n="githubRepoLink">Código Abierto en GitHub</span>
+        </a>
+      </div>
+
+      <div class="suite-bar">
+        <span data-i18n="suiteMention">Suite Chala:</span>
+        <a id="linkChalablock" href="https://github.com/joelchala/Chalablock" target="_blank" rel="noopener noreferrer">Chalablock</a>
+        <span>&bull;</span>
+        <a id="linkChalaVPN" href="https://github.com/joelchala/ChalaVPN" target="_blank" rel="noopener noreferrer">ChalaVPN</a>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

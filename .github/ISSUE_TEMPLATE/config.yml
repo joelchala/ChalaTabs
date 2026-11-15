@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: ChalaTabs Issues & Feature Requests
+    url: https://github.com/joelchala/ChalaTabs/issues
+    about: Reporta errores o sugiere mejoras para ChalaTabs.
+  - name: Chalablock (Suite Chala)
+    url: https://github.com/joelchala/Chalablock
+    about: Bloqueador de anuncios de código abierto de la Suite Chala.
+  - name: ChalaVPN (Suite Chala)
+    url: https://github.com/joelchala/ChalaVPN
+    about: Proxy seguro para navegador de la Suite Chala.

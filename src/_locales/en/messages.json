@@ -1,0 +1,244 @@
+{
+  "extName": {
+    "message": "ChalaTabs",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Organize tabs into Workspaces, suspend inactive tabs to save RAM, and search instantly. 100% free and open source.",
+    "description": "Extension description"
+  },
+  "searchPlaceholder": {
+    "message": "Search open tabs or workspaces...",
+    "description": "Instant search input placeholder"
+  },
+  "openSidePanelTitle": {
+    "message": "Open in Side Panel",
+    "description": "Tooltip to open side panel"
+  },
+  "activeTabsLabel": {
+    "message": "Active",
+    "description": "Active tabs metric label"
+  },
+  "suspendedTabsLabel": {
+    "message": "Suspended",
+    "description": "Suspended tabs metric label"
+  },
+  "ramSavedLabel": {
+    "message": "RAM saved",
+    "description": "Estimated RAM saved metric label"
+  },
+  "suspendInactiveBtn": {
+    "message": "Suspend inactive tabs",
+    "description": "Main suspend button label"
+  },
+  "autoSuspendLabel": {
+    "message": "Auto-suspend:",
+    "description": "Auto-suspend dropdown label"
+  },
+  "autoSuspendOff": {
+    "message": "Disabled",
+    "description": "Auto-suspend disabled option"
+  },
+  "autoSuspend15": {
+    "message": "15 min",
+    "description": "Auto-suspend 15 minutes option"
+  },
+  "autoSuspend30": {
+    "message": "30 min",
+    "description": "Auto-suspend 30 minutes option"
+  },
+  "autoSuspend60": {
+    "message": "60 min",
+    "description": "Auto-suspend 60 minutes option"
+  },
+  "tabOpenTabs": {
+    "message": "Open Tabs",
+    "description": "Open tabs view tab label"
+  },
+  "tabWorkspaces": {
+    "message": "Workspaces",
+    "description": "Workspaces view tab label"
+  },
+  "saveSessionBtn": {
+    "message": "+ Save current session",
+    "description": "Button to save current session as workspace"
+  },
+  "exportBtn": {
+    "message": "Export",
+    "description": "Export JSON backup button"
+  },
+  "importBtn": {
+    "message": "Import",
+    "description": "Import JSON backup button"
+  },
+  "modalSaveTitle": {
+    "message": "Save session as Workspace",
+    "description": "Save session modal title"
+  },
+  "workspaceNameLabel": {
+    "message": "Workspace name",
+    "description": "Workspace name field label"
+  },
+  "workspaceNamePlaceholder": {
+    "message": "e.g. Research, Work, Finance...",
+    "description": "Workspace name placeholder"
+  },
+  "workspaceColorLabel": {
+    "message": "Color tag",
+    "description": "Color tag selector label"
+  },
+  "selectTabsLabel": {
+    "message": "Tabs to include",
+    "description": "Tab selection list label"
+  },
+  "selectAllBtn": {
+    "message": "All",
+    "description": "Select all tabs button"
+  },
+  "deselectAllBtn": {
+    "message": "None",
+    "description": "Deselect all tabs button"
+  },
+  "cancelBtn": {
+    "message": "Cancel",
+    "description": "Cancel button"
+  },
+  "saveBtn": {
+    "message": "Save Workspace",
+    "description": "Save button"
+  },
+  "openInCurrentWindow": {
+    "message": "Current window",
+    "description": "Open workspace in current window"
+  },
+  "openInNewWindow": {
+    "message": "New window",
+    "description": "Open workspace in a new window"
+  },
+  "addCurrentTabToWorkspace": {
+    "message": "+ Add current tab",
+    "description": "Add active tab to workspace"
+  },
+  "deleteWorkspaceTitle": {
+    "message": "Delete Workspace",
+    "description": "Delete workspace button tooltip"
+  },
+  "removeTabFromWorkspace": {
+    "message": "Remove tab from Workspace",
+    "description": "Remove single tab from workspace tooltip"
+  },
+  "noOpenTabsMatch": {
+    "message": "No open tabs match your search.",
+    "description": "Empty state for open tabs search"
+  },
+  "noWorkspacesYet": {
+    "message": "No Workspaces saved yet. Create one using the button above to organize your sessions.",
+    "description": "Empty state when no workspaces exist"
+  },
+  "noWorkspacesMatch": {
+    "message": "No Workspaces or saved tabs match that search.",
+    "description": "Empty state for workspaces search"
+  },
+  "suspendSingleTabTitle": {
+    "message": "Suspend tab to free RAM",
+    "description": "Suspend single tab tooltip"
+  },
+  "closeTabTitle": {
+    "message": "Close tab",
+    "description": "Close tab tooltip"
+  },
+  "protectedTabCloseTitle": {
+    "message": "Protected internal browser tab (cannot be closed)",
+    "description": "Tooltip when the tab uses a protected internal browser scheme"
+  },
+  "protectedTabBadge": {
+    "message": "System",
+    "description": "Badge for protected internal browser tab"
+  },
+  "tabSuspendedBadge": {
+    "message": "Suspended",
+    "description": "Suspended tab badge"
+  },
+  "tabPinnedBadge": {
+    "message": "Pinned",
+    "description": "Pinned tab badge"
+  },
+  "tabAudibleBadge": {
+    "message": "Audio",
+    "description": "Audible tab badge"
+  },
+  "windowGroupTitle": {
+    "message": "Window $NUM$",
+    "description": "Window group header",
+    "placeholders": {
+      "num": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "searchResultsOpenTabs": {
+    "message": "Open tabs",
+    "description": "Search results section for open tabs"
+  },
+  "searchResultsWorkspaces": {
+    "message": "In saved Workspaces",
+    "description": "Search results section for saved workspaces"
+  },
+  "donatePaypalBtn": {
+    "message": "Support the project (PayPal)",
+    "description": "PayPal donation button"
+  },
+  "githubRepoLink": {
+    "message": "GitHub Open Source",
+    "description": "GitHub repository link"
+  },
+  "suiteMention": {
+    "message": "Chala Suite:",
+    "description": "Subtle mention to Chala Suite"
+  },
+  "toastSuspendedCount": {
+    "message": "Suspended $COUNT$ inactive tabs.",
+    "description": "Notification for suspended tabs count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4"
+      }
+    }
+  },
+  "toastNoTabsToSuspend": {
+    "message": "No eligible inactive tabs to suspend.",
+    "description": "Notification when no tabs can be suspended"
+  },
+  "toastWorkspaceSaved": {
+    "message": "Workspace saved successfully.",
+    "description": "Notification when workspace is saved"
+  },
+  "toastWorkspaceDeleted": {
+    "message": "Workspace deleted.",
+    "description": "Notification when workspace is deleted"
+  },
+  "toastTabAddedToWorkspace": {
+    "message": "Tab added to Workspace.",
+    "description": "Notification when current tab is added to workspace"
+  },
+  "toastBackupExported": {
+    "message": "JSON backup exported.",
+    "description": "Notification when backup is exported"
+  },
+  "toastBackupImported": {
+    "message": "Imported $COUNT$ Workspaces.",
+    "description": "Notification when backup is imported",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "toastBackupError": {
+    "message": "Invalid ChalaTabs JSON backup file.",
+    "description": "Error when importing invalid backup"
+  }
+}
