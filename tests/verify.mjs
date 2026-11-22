@@ -45,6 +45,7 @@ async function run() {
       path.join(SRC, "config.js"),
       path.join(SRC, "background.js"),
       path.join(SRC, "popup", "popup.js"),
+      path.join(SRC, "popup", "workspace-import.js"),
       path.join(ROOT, "tools", "make-mv3.mjs")
     ];
     for (const file of jsFiles) {
@@ -80,9 +81,14 @@ async function run() {
     ].filter(Boolean);
 
     for (const relPath of referencedPaths) {
-      const absPath = path.join(SRC, relPath);
+      const cleanPath = relPath.split(/[?#]/)[0];
+      const absPath = path.join(SRC, cleanPath);
       assert.ok(fs.existsSync(absPath), `Referenced asset missing in src/: ${relPath}`);
     }
+
+    // Popup y panel lateral deben distinguirse por query string (bug: falso positivo de sidePanel)
+    assert.equal(manifest.action.default_popup, "popup/index.html");
+    assert.match(manifest.side_panel.default_path, /\?view=sidepanel$/);
   });
 
   // 3. Validacion de _locales y atributos data-i18n* en src/popup/index.html
@@ -99,6 +105,18 @@ async function run() {
     for (const key of esKeys) {
       assert.ok(esMsgs[key]?.message?.trim(), `Empty es message for ${key}`);
       assert.ok(enMsgs[key]?.message?.trim(), `Empty en message for ${key}`);
+    }
+
+    // Limite de tiendas (Chrome Web Store y Microsoft Edge Add-ons: max 132 caracteres para description y 45 para name)
+    for (const [locale, msgs] of [["es", esMsgs], ["en", enMsgs]]) {
+      assert.ok(
+        msgs.extName.message.length <= 45,
+        `extName in locale '${locale}' exceeds 45 chars (${msgs.extName.message.length})`
+      );
+      assert.ok(
+        msgs.extDescription.message.length <= 132,
+        `extDescription in locale '${locale}' exceeds 132 chars (${msgs.extDescription.message.length})`
+      );
     }
 
     const html = fs.readFileSync(path.join(SRC, "popup", "index.html"), "utf8");
@@ -181,7 +199,12 @@ async function run() {
   const createdAlarms = [];
   let badgeState = { text: "", color: "" };
 
-  const makeEvent = () => ({ addListener: () => {} });
+  const makeEvent = () => {
+    const listeners = [];
+    return { listeners, addListener: (fn) => listeners.push(fn) };
+  };
+  const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+  let failStorageGet = false;
   globalThis.chrome = {
     runtime: {
       onInstalled: makeEvent(),
@@ -201,6 +224,7 @@ async function run() {
       },
       get: async (id) => mockTabs.find((t) => t.id === id),
       discard: async (id) => {
+        await tick();
         discardedIds.push(id);
         const tab = mockTabs.find((t) => t.id === id);
         if (tab) tab.discarded = true;
@@ -210,6 +234,10 @@ async function run() {
     storage: {
       local: {
         get: async (keys) => {
+          await tick();
+          if (failStorageGet) {
+            throw new Error("Simulated storage failure");
+          }
           if (Array.isArray(keys)) {
             const out = {};
             for (const k of keys) {
@@ -223,6 +251,7 @@ async function run() {
           return { ...store };
         },
         set: async (obj) => {
+          await tick();
           Object.assign(store, obj);
         }
       }
@@ -355,6 +384,177 @@ async function run() {
     const res = await bg.checkAutoSuspend(now);
     assert.equal(res.suspendedCount, 1);
     assert.deepEqual(discardedIds, [21]);
+  });
+
+  await test("Concurrent touchTabActivity/removeTabActivity calls do not lose updates", async () => {
+    store[CONFIG.STORAGE_KEYS.TAB_ACTIVITY] = { "900": 1, "901": 1 };
+    const ids = Array.from({ length: 20 }, (_, i) => 100 + i);
+    await Promise.all([
+      ...ids.map((id) => bg.touchTabActivity(id, 5000 + id)),
+      bg.removeTabActivity(900),
+      bg.removeTabActivity(901)
+    ]);
+    const activity = store[CONFIG.STORAGE_KEYS.TAB_ACTIVITY];
+    for (const id of ids) {
+      assert.equal(activity[String(id)], 5000 + id, `Lost activity update for tab ${id}`);
+    }
+    assert.equal("900" in activity, false, "Removed tab 900 reappeared");
+    assert.equal("901" in activity, false, "Removed tab 901 reappeared");
+  });
+
+  await test("checkAutoSuspend does not overwrite a touch that happens while discarding", async () => {
+    discardedIds.length = 0;
+    const now = 1_800_000_000_000;
+    const stale = now - 60 * 60 * 1000;
+    store[CONFIG.STORAGE_KEYS.SETTINGS] = { autoSuspendMinutes: 30 };
+    store[CONFIG.STORAGE_KEYS.TAB_ACTIVITY] = { "31": stale, "32": stale, "33": stale };
+    mockTabs = [
+      { id: 31, windowId: 1, active: false, pinned: false, audible: false, discarded: false, url: "https://a.test" },
+      { id: 32, windowId: 1, active: false, pinned: false, audible: false, discarded: false, url: "https://b.test" },
+      { id: 33, windowId: 1, active: false, pinned: true, audible: false, discarded: false, url: "https://c.test" }
+    ];
+    const checkPromise = bg.checkAutoSuspend(now);
+    await tick();
+    const touchPromise = bg.touchTabActivity(33, now + 1);
+    await Promise.all([checkPromise, touchPromise]);
+    assert.equal(
+      store[CONFIG.STORAGE_KEYS.TAB_ACTIVITY]["33"],
+      now + 1,
+      "Touch during auto-suspend check was overwritten by stale snapshot"
+    );
+  });
+
+  await test("initializeExtensionState resets stale activity on browser startup (tab IDs reused)", async () => {
+    const before = Date.now();
+    store[CONFIG.STORAGE_KEYS.TAB_ACTIVITY] = { "41": 1000, "42": 1000 };
+    mockTabs = [
+      { id: 41, windowId: 1, active: false, pinned: false, audible: false, discarded: false, url: "https://x.test" },
+      { id: 42, windowId: 1, active: false, pinned: false, audible: false, discarded: false, url: "https://y.test" }
+    ];
+    await bg.initializeExtensionState({ resetActivity: true });
+    const activity = store[CONFIG.STORAGE_KEYS.TAB_ACTIVITY];
+    assert.ok(activity["41"] >= before, "Tab 41 inherited stale timestamp after startup");
+    assert.ok(activity["42"] >= before, "Tab 42 inherited stale timestamp after startup");
+
+    // Sin reset (onInstalled/update) se conservan los timestamps existentes
+    store[CONFIG.STORAGE_KEYS.TAB_ACTIVITY] = { "41": 1000, "42": 1000 };
+    await bg.initializeExtensionState();
+    assert.equal(store[CONFIG.STORAGE_KEYS.TAB_ACTIVITY]["41"], 1000);
+  });
+
+  await test("onMessage always responds, even when the handler throws", async () => {
+    const listener = chrome.runtime.onMessage.listeners[0];
+    assert.equal(typeof listener, "function", "onMessage listener not registered");
+
+    const send = (message) =>
+      new Promise((resolve) => {
+        const keepOpen = listener(message, {}, resolve);
+        assert.equal(keepOpen, true, "Listener must return true for async response");
+      });
+
+    failStorageGet = true;
+    let res;
+    try {
+      res = await send({ type: "SET_AUTOSUSPEND_MINUTES", minutes: 15 });
+    } finally {
+      failStorageGet = false;
+    }
+    assert.equal(res.ok, false);
+    assert.match(res.error, /Simulated storage failure/);
+
+    const unknown = await send({ type: "NOPE" });
+    assert.deepEqual(unknown, { ok: false, error: "UNKNOWN_ACTION" });
+
+    const negative = await send({ type: "SET_AUTOSUSPEND_MINUTES", minutes: -5 });
+    assert.equal(negative.ok, true);
+    assert.equal(negative.autoSuspendMinutes, 0);
+  });
+
+  const { mergeImportedWorkspaces } = await import("../src/popup/workspace-import.js");
+
+  await test("mergeImportedWorkspaces rejects invalid formats", () => {
+    assert.throws(() => mergeImportedWorkspaces({ foo: 1 }, []));
+    assert.throws(() => mergeImportedWorkspaces([{ name: 1, tabs: [] }], []));
+    assert.throws(() => mergeImportedWorkspaces([{ name: "ok" }], []));
+    assert.throws(() => mergeImportedWorkspaces(null, []));
+  });
+
+  await test("mergeImportedWorkspaces never silently replaces existing workspaces", () => {
+    const existing = [
+      { id: "ws_a", name: "Trabajo", color: "#10B981", createdAt: 1, tabs: [{ title: "A", url: "https://a.test", favIconUrl: "" }] }
+    ];
+
+    // Mismo id con contenido distinto -> se conservan ambos
+    const collide = mergeImportedWorkspaces(
+      [{ id: "ws_a", name: "Otro", tabs: [{ url: "https://b.test" }] }],
+      existing
+    );
+    assert.equal(collide.workspaces.length, 2);
+    assert.equal(collide.workspaces[0].name, "Trabajo", "Existing workspace was replaced");
+    assert.notEqual(collide.workspaces[1].id, "ws_a", "Imported workspace must get a new id");
+    assert.equal(collide.added, 1);
+
+    // Mismo id y contenido identico -> se omite (reimportar el mismo respaldo no duplica)
+    const same = mergeImportedWorkspaces(
+      { workspaces: [{ id: "ws_a", name: "Trabajo", tabs: [{ url: "https://a.test" }] }] },
+      existing
+    );
+    assert.equal(same.workspaces.length, 1);
+    assert.equal(same.skipped, 1);
+
+    // Ids duplicados dentro del mismo archivo
+    const dupInFile = mergeImportedWorkspaces(
+      [
+        { id: "ws_x", name: "Uno", tabs: [] },
+        { id: "ws_x", name: "Dos", tabs: [] }
+      ],
+      []
+    );
+    const ids = dupInFile.workspaces.map((ws) => ws.id);
+    assert.equal(new Set(ids).size, 2, "Duplicate ids inside file must be resolved");
+
+    // El array existente no se muta
+    assert.equal(existing.length, 1);
+  });
+
+  await test("mergeImportedWorkspaces filters dangerous URLs and sanitizes fields", () => {
+    const { workspaces } = mergeImportedWorkspaces(
+      [
+        {
+          name: "  " + "N".repeat(100) + "  ",
+          color: "#fff; background:url(x)",
+          tabs: [
+            { url: "javascript:alert(1)", title: "x" },
+            { url: "data:text/html,<script>1</script>" },
+            { url: "file:///C:/secret.txt" },
+            { url: "  https://ok.test/page  ", title: "OK", favIconUrl: "javascript:alert(1)" },
+            { url: "chrome://settings" },
+            { url: 42 }
+          ]
+        }
+      ],
+      []
+    );
+    const [ws] = workspaces;
+    assert.equal(ws.name.length, 48);
+    assert.equal(ws.color, CONFIG.COLORS.PRIMARY);
+    assert.deepEqual(
+      ws.tabs.map((tab) => tab.url),
+      ["https://ok.test/page", "chrome://settings"]
+    );
+    assert.equal(ws.tabs[0].favIconUrl, "");
+    assert.ok(ws.id.startsWith("ws_"));
+  });
+
+  await test("Popup source: no await before sidePanel.open and no getContexts-based detection", () => {
+    const popupJs = fs.readFileSync(path.join(SRC, "popup", "popup.js"), "utf8");
+    assert.equal(popupJs.includes("runtime.getContexts("), false, "getContexts detection gives false positives");
+    assert.equal(
+      /await\s+chrome\.windows\.getCurrent\(\);\s*await\s+chrome\.sidePanel\.open/.test(popupJs),
+      false,
+      "sidePanel.open must not be preceded by an await (user gesture is lost)"
+    );
+    assert.match(popupJs, /URLSearchParams\(window\.location\.search\)/);
   });
 
   if (process.exitCode && process.exitCode !== 0) {

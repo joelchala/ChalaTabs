@@ -240,5 +240,43 @@
   "toastBackupError": {
     "message": "Invalid ChalaTabs JSON backup file.",
     "description": "Error when importing invalid backup"
+  },
+  "toastActionError": {
+    "message": "The action could not be completed. Please try again.",
+    "description": "Generic error when a background action fails"
+  },
+  "toastSaveError": {
+    "message": "Changes could not be saved (storage full or unavailable).",
+    "description": "Error when saving workspaces to storage fails"
+  },
+  "toastSidePanelError": {
+    "message": "The side panel could not be opened in this window.",
+    "description": "Error when opening the side panel fails"
+  },
+  "toastNoTabsSelected": {
+    "message": "Select at least one tab to save.",
+    "description": "Validation message when no tabs are checked in the save modal"
+  },
+  "toastImportInTab": {
+    "message": "Click Import here to choose your backup file.",
+    "description": "Hint shown in the full-page view opened to import a backup"
+  },
+  "toastWorkspaceOpenPartial": {
+    "message": "Opened $OPENED$ tabs; $FAILED$ could not be opened.",
+    "description": "Notification when some workspace tabs failed to open",
+    "placeholders": {
+      "opened": {
+        "content": "$1",
+        "example": "5"
+      },
+      "failed": {
+        "content": "$2",
+        "example": "1"
+      }
+    }
+  },
+  "toastTabOpenError": {
+    "message": "This page cannot be opened by the extension.",
+    "description": "Error when a saved tab cannot be opened"
   }
 }

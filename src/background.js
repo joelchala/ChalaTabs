@@ -33,6 +33,19 @@ export function isSuspendableTab(tab) {
 }
 
 /**
+ * Cola de exclusion mutua para serializar todas las operaciones de lectura-modificacion-escritura
+ * sobre el registro de actividad. Evita que eventos concurrentes (onActivated, onUpdated,
+ * onRemoved, alarma) se pisen entre si y pierdan actualizaciones.
+ */
+let activityQueue = Promise.resolve();
+
+export function withActivityLock(task) {
+  const run = activityQueue.then(task, task);
+  activityQueue = run.catch(() => {});
+  return run;
+}
+
+/**
  * Lee configuracion y registro de actividad desde chrome.storage.local.
  */
 async function getStorageState() {
@@ -54,68 +67,94 @@ async function getStorageState() {
 /**
  * Actualiza el timestamp de ultima actividad para una pestana especifica.
  */
-async function touchTabActivity(tabId, timestamp = Date.now()) {
+export function touchTabActivity(tabId, timestamp = Date.now()) {
   if (typeof tabId !== "number") {
-    return;
+    return Promise.resolve();
   }
-  const data = await chrome.storage.local.get(CONFIG.STORAGE_KEYS.TAB_ACTIVITY);
-  const tabActivity = { ...(data[CONFIG.STORAGE_KEYS.TAB_ACTIVITY] || {}) };
-  tabActivity[String(tabId)] = timestamp;
-  await chrome.storage.local.set({
-    [CONFIG.STORAGE_KEYS.TAB_ACTIVITY]: tabActivity
+  return withActivityLock(async () => {
+    const data = await chrome.storage.local.get(CONFIG.STORAGE_KEYS.TAB_ACTIVITY);
+    const tabActivity = { ...(data[CONFIG.STORAGE_KEYS.TAB_ACTIVITY] || {}) };
+    tabActivity[String(tabId)] = timestamp;
+    await chrome.storage.local.set({
+      [CONFIG.STORAGE_KEYS.TAB_ACTIVITY]: tabActivity
+    });
   });
 }
 
 /**
  * Elimina el registro de actividad de una pestana cerrada.
  */
-async function removeTabActivity(tabId) {
-  const data = await chrome.storage.local.get(CONFIG.STORAGE_KEYS.TAB_ACTIVITY);
-  const tabActivity = { ...(data[CONFIG.STORAGE_KEYS.TAB_ACTIVITY] || {}) };
-  if (Object.prototype.hasOwnProperty.call(tabActivity, String(tabId))) {
-    delete tabActivity[String(tabId)];
+export function removeTabActivity(tabId) {
+  return withActivityLock(async () => {
+    const data = await chrome.storage.local.get(CONFIG.STORAGE_KEYS.TAB_ACTIVITY);
+    const tabActivity = { ...(data[CONFIG.STORAGE_KEYS.TAB_ACTIVITY] || {}) };
+    if (Object.prototype.hasOwnProperty.call(tabActivity, String(tabId))) {
+      delete tabActivity[String(tabId)];
+      await chrome.storage.local.set({
+        [CONFIG.STORAGE_KEYS.TAB_ACTIVITY]: tabActivity
+      });
+    }
+  });
+}
+
+/**
+ * Traslada el registro de actividad cuando Chrome reemplaza una pestana por otra (prerender, etc.).
+ */
+function replaceTabActivity(addedTabId, removedTabId) {
+  return withActivityLock(async () => {
+    const data = await chrome.storage.local.get(CONFIG.STORAGE_KEYS.TAB_ACTIVITY);
+    const tabActivity = { ...(data[CONFIG.STORAGE_KEYS.TAB_ACTIVITY] || {}) };
+    const previous = tabActivity[String(removedTabId)];
+    delete tabActivity[String(removedTabId)];
+    tabActivity[String(addedTabId)] = Number(previous) || Date.now();
     await chrome.storage.local.set({
       [CONFIG.STORAGE_KEYS.TAB_ACTIVITY]: tabActivity
     });
-  }
+  });
 }
 
 /**
  * Inicializa valores por defecto en almacenamiento local y sincroniza pestanas abiertas.
+ * Con resetActivity=true (arranque del navegador) descarta los timestamps previos: los IDs de
+ * pestana no son persistentes entre sesiones y podrian coincidir con pestanas antiguas.
  */
-async function initializeExtensionState() {
-  const data = await chrome.storage.local.get([
-    CONFIG.STORAGE_KEYS.SETTINGS,
-    CONFIG.STORAGE_KEYS.WORKSPACES,
-    CONFIG.STORAGE_KEYS.TAB_ACTIVITY
-  ]);
+export async function initializeExtensionState({ resetActivity = false } = {}) {
+  const settings = await withActivityLock(async () => {
+    const data = await chrome.storage.local.get([
+      CONFIG.STORAGE_KEYS.SETTINGS,
+      CONFIG.STORAGE_KEYS.WORKSPACES,
+      CONFIG.STORAGE_KEYS.TAB_ACTIVITY
+    ]);
 
-  const updates = {};
-  const settings = {
-    ...CONFIG.DEFAULT_SETTINGS,
-    ...(data[CONFIG.STORAGE_KEYS.SETTINGS] || {})
-  };
+    const updates = {};
+    const mergedSettings = {
+      ...CONFIG.DEFAULT_SETTINGS,
+      ...(data[CONFIG.STORAGE_KEYS.SETTINGS] || {})
+    };
 
-  if (!data[CONFIG.STORAGE_KEYS.SETTINGS]) {
-    updates[CONFIG.STORAGE_KEYS.SETTINGS] = settings;
-  }
-  if (!Array.isArray(data[CONFIG.STORAGE_KEYS.WORKSPACES])) {
-    updates[CONFIG.STORAGE_KEYS.WORKSPACES] = [];
-  }
+    if (!data[CONFIG.STORAGE_KEYS.SETTINGS]) {
+      updates[CONFIG.STORAGE_KEYS.SETTINGS] = mergedSettings;
+    }
+    if (!Array.isArray(data[CONFIG.STORAGE_KEYS.WORKSPACES])) {
+      updates[CONFIG.STORAGE_KEYS.WORKSPACES] = [];
+    }
 
-  const tabs = await chrome.tabs.query({});
-  const existingActivity = data[CONFIG.STORAGE_KEYS.TAB_ACTIVITY] || {};
-  const now = Date.now();
-  const nextActivity = {};
+    const tabs = await chrome.tabs.query({});
+    const existingActivity = resetActivity ? {} : data[CONFIG.STORAGE_KEYS.TAB_ACTIVITY] || {};
+    const now = Date.now();
+    const nextActivity = {};
 
-  for (const tab of tabs) {
-    if (typeof tab.id !== "number") continue;
-    const key = String(tab.id);
-    nextActivity[key] = tab.active || tab.audible ? now : existingActivity[key] || now;
-  }
-  updates[CONFIG.STORAGE_KEYS.TAB_ACTIVITY] = nextActivity;
+    for (const tab of tabs) {
+      if (typeof tab.id !== "number") continue;
+      const key = String(tab.id);
+      nextActivity[key] = tab.active || tab.audible ? now : Number(existingActivity[key]) || now;
+    }
+    updates[CONFIG.STORAGE_KEYS.TAB_ACTIVITY] = nextActivity;
 
-  await chrome.storage.local.set(updates);
+    await chrome.storage.local.set(updates);
+    return mergedSettings;
+  });
+
   await configureAutoSuspendAlarm(settings.autoSuspendMinutes);
   await updateBadge();
 }
@@ -214,7 +253,13 @@ export async function suspendSingleTab(tabId) {
 /**
  * Evalua la inactividad de cada pestana abierta y suspende las que superen el umbral configurado.
  */
-export async function checkAutoSuspend(now = Date.now()) {
+export function checkAutoSuspend(now = Date.now()) {
+  // Se ejecuta dentro del lock: cualquier touchTabActivity que llegue durante los discard
+  // queda en cola y se aplica despues, sin ser sobrescrito por este snapshot.
+  return withActivityLock(() => runAutoSuspendCheck(now));
+}
+
+async function runAutoSuspendCheck(now) {
   const { settings, tabActivity } = await getStorageState();
   const minutes = Number(settings.autoSuspendMinutes);
 
@@ -297,83 +342,93 @@ async function getStatusSummary() {
  */
 export function registerListeners() {
   chrome.runtime.onInstalled.addListener(() => {
-    initializeExtensionState();
+    initializeExtensionState().catch(() => {});
   });
 
   chrome.runtime.onStartup.addListener(() => {
-    initializeExtensionState();
+    initializeExtensionState({ resetActivity: true }).catch(() => {});
   });
 
   chrome.tabs.onActivated.addListener(({ tabId }) => {
-    touchTabActivity(tabId);
-    updateBadge();
+    touchTabActivity(tabId).catch(() => {});
+    updateBadge().catch(() => {});
   });
 
   chrome.tabs.onCreated.addListener((tab) => {
     if (typeof tab?.id === "number") {
-      touchTabActivity(tab.id);
+      touchTabActivity(tab.id).catch(() => {});
     }
-    updateBadge();
+    updateBadge().catch(() => {});
   });
 
   chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.audible || tab?.active || changeInfo.status === "complete") {
-      touchTabActivity(tabId);
+    if (changeInfo.audible === true || (tab?.active && changeInfo.status === "complete")) {
+      touchTabActivity(tabId).catch(() => {});
     }
     if ("discarded" in changeInfo || changeInfo.status === "complete") {
-      updateBadge();
+      updateBadge().catch(() => {});
     }
   });
 
   chrome.tabs.onRemoved.addListener((tabId) => {
-    removeTabActivity(tabId);
-    updateBadge();
+    removeTabActivity(tabId).catch(() => {});
+    updateBadge().catch(() => {});
   });
+
+  if (chrome.tabs.onReplaced) {
+    chrome.tabs.onReplaced.addListener((addedTabId, removedTabId) => {
+      replaceTabActivity(addedTabId, removedTabId).catch(() => {});
+    });
+  }
 
   chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm?.name === CONFIG.AUTOSUSPEND_ALARM_NAME) {
-      checkAutoSuspend();
+      checkAutoSuspend().catch(() => {});
     }
   });
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    (async () => {
-      switch (message?.type) {
-        case "SUSPEND_INACTIVE_TABS": {
-          const result = await suspendInactiveTabs(message.windowId ?? null);
-          sendResponse({ ok: true, ...result });
-          break;
-        }
-        case "SUSPEND_SINGLE_TAB": {
-          const result = await suspendSingleTab(message.tabId);
-          sendResponse({ ok: true, ...result });
-          break;
-        }
-        case "SET_AUTOSUSPEND_MINUTES": {
-          const minutes = Number(message.minutes) || 0;
-          const { settings } = await getStorageState();
-          const nextSettings = { ...settings, autoSuspendMinutes: minutes };
-          await chrome.storage.local.set({
-            [CONFIG.STORAGE_KEYS.SETTINGS]: nextSettings
-          });
-          await configureAutoSuspendAlarm(minutes);
-          sendResponse({ ok: true, autoSuspendMinutes: minutes });
-          break;
-        }
-        case "GET_STATUS_SUMMARY": {
-          const summary = await getStatusSummary();
-          sendResponse({ ok: true, ...summary });
-          break;
-        }
-        default: {
-          sendResponse({ ok: false, error: "UNKNOWN_ACTION" });
-          break;
-        }
-      }
-    })();
-
+    handleMessage(message)
+      .then((response) => sendResponse(response))
+      .catch((err) => {
+        sendResponse({ ok: false, error: String(err?.message || err || "UNKNOWN_ERROR") });
+      });
     return true;
   });
+}
+
+/**
+ * Procesa los mensajes del popup / panel lateral. Cualquier excepcion se propaga al caller,
+ * que siempre responde con { ok: false, error } para no dejar el puerto abierto sin respuesta.
+ */
+export async function handleMessage(message) {
+  switch (message?.type) {
+    case "SUSPEND_INACTIVE_TABS": {
+      const result = await suspendInactiveTabs(message.windowId ?? null);
+      return { ok: true, ...result };
+    }
+    case "SUSPEND_SINGLE_TAB": {
+      const result = await suspendSingleTab(message.tabId);
+      return { ok: true, ...result };
+    }
+    case "SET_AUTOSUSPEND_MINUTES": {
+      const parsed = Number(message.minutes);
+      const minutes = Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : 0;
+      const { settings } = await getStorageState();
+      const nextSettings = { ...settings, autoSuspendMinutes: minutes };
+      await chrome.storage.local.set({
+        [CONFIG.STORAGE_KEYS.SETTINGS]: nextSettings
+      });
+      await configureAutoSuspendAlarm(minutes);
+      return { ok: true, autoSuspendMinutes: minutes };
+    }
+    case "GET_STATUS_SUMMARY": {
+      const summary = await getStatusSummary();
+      return { ok: true, ...summary };
+    }
+    default:
+      return { ok: false, error: "UNKNOWN_ACTION" };
+  }
 }
 
 if (

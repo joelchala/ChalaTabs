@@ -1,4 +1,18 @@
 import { CONFIG } from "../config.js";
+import { mergeImportedWorkspaces } from "./workspace-import.js";
+
+/**
+ * Modo de vista segun el parametro ?view= de la URL:
+ *  - "popup" (por defecto): popup de la accion, se cierra tras navegar.
+ *  - "sidepanel": panel lateral (definido en manifest.side_panel.default_path).
+ *  - "tab": pagina completa en una pestana (usada para importar respaldos de forma fiable).
+ * Popup y panel lateral comparten el mismo HTML, por eso se distinguen por query string y no por
+ * documentUrl/getContexts, que daba falsos positivos cuando habia un panel lateral abierto.
+ */
+const URL_PARAMS = new URLSearchParams(window.location.search);
+const VIEW_MODE = ["sidepanel", "tab"].includes(URL_PARAMS.get("view"))
+  ? URL_PARAMS.get("view")
+  : "popup";
 
 const state = {
   openTabs: [],
@@ -9,10 +23,45 @@ const state = {
   selectedSearchIndex: -1,
   selectedColor: CONFIG.WORKSPACE_COLORS[0],
   collapsedWorkspaces: new Set(),
-  toastTimer: null
+  toastTimer: null,
+  currentWindowId: null
 };
 
 const dom = {};
+
+/**
+ * Indica si la interfaz es persistente (panel lateral o pestana) y no debe cerrarse tras una accion.
+ */
+function isPersistentView() {
+  return VIEW_MODE !== "popup";
+}
+
+/**
+ * Cierra la ventana solo cuando se ejecuta como popup de la accion.
+ */
+function closeIfPopup() {
+  if (!isPersistentView()) {
+    window.close();
+  }
+}
+
+/**
+ * Envia un mensaje al service worker y devuelve la respuesta, o null si fallo.
+ * Muestra un toast de error en lugar de dejar una promesa rechazada sin capturar.
+ */
+async function sendRuntimeMessage(message) {
+  try {
+    const res = await chrome.runtime.sendMessage(message);
+    if (!res || res.ok === false) {
+      showToast(t("toastActionError"), true);
+      return null;
+    }
+    return res;
+  } catch {
+    showToast(t("toastActionError"), true);
+    return null;
+  }
+}
 
 /**
  * Traduce una clave desde chrome.i18n con respaldo seguro.
@@ -166,23 +215,22 @@ function createTabIconElement(favIconUrl) {
 }
 
 /**
- * Detecta si la pagina se esta ejecutando dentro de sidePanel para adaptar el layout.
+ * Adapta el layout segun el modo de vista y cachea el ID de la ventana actual.
+ * El windowId se cachea aqui para poder llamar a chrome.sidePanel.open() de forma sincrona
+ * dentro del click (un await previo invalida el user gesture que exige Chrome).
  */
-async function detectSidePanelContext() {
-  let isSidePanel = window.innerHeight > 610;
-  if (chrome.runtime?.getContexts) {
-    try {
-      const contexts = await chrome.runtime.getContexts({ contextTypes: ["SIDE_PANEL"] });
-      if (contexts.some((ctx) => ctx.documentUrl === window.location.href)) {
-        isSidePanel = true;
-      }
-    } catch {
-      // Mantiene deteccion por altura
-    }
-  }
-  if (isSidePanel) {
+async function detectViewContext() {
+  if (isPersistentView()) {
     document.body.classList.add("is-sidepanel");
+  }
+  if (VIEW_MODE === "sidepanel") {
     dom.btnSidePanel?.classList.add("hidden");
+  }
+  try {
+    const currentWin = await chrome.windows.getCurrent();
+    state.currentWindowId = currentWin?.id ?? null;
+  } catch {
+    state.currentWindowId = null;
   }
 }
 
@@ -215,12 +263,42 @@ async function loadState() {
 }
 
 /**
- * Guarda la lista actualizada de workspaces en chrome.storage.local.
+ * Lee la lista de workspaces directamente desde storage (fuente de verdad compartida).
  */
-async function saveWorkspaces() {
-  await chrome.storage.local.set({
-    [CONFIG.STORAGE_KEYS.WORKSPACES]: state.workspaces
+async function readStoredWorkspaces() {
+  const data = await chrome.storage.local.get(CONFIG.STORAGE_KEYS.WORKSPACES);
+  const list = data[CONFIG.STORAGE_KEYS.WORKSPACES];
+  return Array.isArray(list) ? list : [];
+}
+
+let workspaceMutationQueue = Promise.resolve();
+
+/**
+ * Aplica una mutacion sobre la copia MAS RECIENTE de los workspaces en storage y la guarda.
+ * Evita que popup y panel(es) lateral(es) abiertos a la vez se sobrescriban con estados viejos.
+ * Si el guardado falla, state.workspaces no se modifica. Devuelve { ok, result }.
+ */
+function mutateWorkspaces(mutator) {
+  const run = workspaceMutationQueue.then(async () => {
+    try {
+      const fresh = await readStoredWorkspaces();
+      const result = await mutator(fresh);
+      if (result === false) {
+        state.workspaces = fresh;
+        return { ok: false, result };
+      }
+      await chrome.storage.local.set({
+        [CONFIG.STORAGE_KEYS.WORKSPACES]: fresh
+      });
+      state.workspaces = fresh;
+      return { ok: true, result };
+    } catch {
+      showToast(t("toastSaveError"), true);
+      return { ok: false, result: undefined };
+    }
   });
+  workspaceMutationQueue = run.catch(() => {});
+  return run;
 }
 
 /**
@@ -254,9 +332,7 @@ async function jumpToOpenTab(tab) {
   try {
     await chrome.windows.update(tab.windowId, { focused: true });
     await chrome.tabs.update(tab.id, { active: true });
-    if (!document.body.classList.contains("is-sidepanel")) {
-      window.close();
-    }
+    closeIfPopup();
   } catch {
     // Evita excepciones si el navegador restringe el cambio de foco en esa pestana o ventana
   }
@@ -267,18 +343,16 @@ async function jumpToOpenTab(tab) {
  */
 async function jumpToSavedTab(savedTab) {
   if (!savedTab?.url) return;
+  const existing = state.openTabs.find((tItem) => tItem.url === savedTab.url);
+  if (existing) {
+    await jumpToOpenTab(existing);
+    return;
+  }
   try {
-    const existing = state.openTabs.find((tItem) => tItem.url === savedTab.url);
-    if (existing) {
-      await jumpToOpenTab(existing);
-      return;
-    }
     await chrome.tabs.create({ url: savedTab.url, active: true });
-    if (!document.body.classList.contains("is-sidepanel")) {
-      window.close();
-    }
+    closeIfPopup();
   } catch {
-    // Ignora esquemas protegidos que Chromium no permite abrir programaticamente
+    showToast(t("toastTabOpenError"), true);
   }
 }
 
@@ -355,11 +429,7 @@ function buildOpenTabRow(tab, isSearchResult = false) {
     suspendBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
     suspendBtn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      try {
-        await chrome.runtime.sendMessage({ type: "SUSPEND_SINGLE_TAB", tabId: tab.id });
-      } catch {
-        // Ignora errores si el navegador restringe suspender la pestana
-      }
+      await sendRuntimeMessage({ type: "SUSPEND_SINGLE_TAB", tabId: tab.id });
       await refreshAll();
     });
     actions.appendChild(suspendBtn);
@@ -556,6 +626,8 @@ function renderOpenTabsView() {
 
 /**
  * Abre todas las pestanas de un workspace en la ventana actual o en una nueva.
+ * Cada pestana se abre de forma independiente: una URL que el navegador rechace
+ * (esquema interno, file://, javascript:...) ya no aborta la apertura del resto.
  */
 async function openWorkspace(workspace, inNewWindow = false) {
   const urls = (workspace.tabs || [])
@@ -564,49 +636,84 @@ async function openWorkspace(workspace, inNewWindow = false) {
 
   if (urls.length === 0) return;
 
+  let opened = 0;
+  let failed = 0;
+  let targetWindowId = null;
+  let placeholderTabId = null;
+
   try {
     if (inNewWindow) {
-      await chrome.windows.create({ url: urls, focused: true });
+      const win = await chrome.windows.create({ focused: true });
+      targetWindowId = win.id;
+      placeholderTabId = win.tabs?.[0]?.id ?? null;
     } else {
-      const currentWin = await chrome.windows.getCurrent();
-      for (let i = 0; i < urls.length; i += 1) {
-        await chrome.tabs.create({
-          windowId: currentWin.id,
-          url: urls[i],
-          active: i === 0
-        });
-      }
-    }
-
-    if (!document.body.classList.contains("is-sidepanel")) {
-      window.close();
+      targetWindowId =
+        state.currentWindowId ?? (await chrome.windows.getCurrent()).id;
     }
   } catch {
-    // Ignora pestanas cuyo esquema interno impida la apertura programatica
+    showToast(t("toastActionError"), true);
+    return;
   }
+
+  for (const url of urls) {
+    try {
+      await chrome.tabs.create({
+        windowId: targetWindowId,
+        url,
+        active: opened === 0
+      });
+      opened += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+
+  if (inNewWindow) {
+    try {
+      if (opened === 0) {
+        await chrome.windows.remove(targetWindowId);
+      } else if (placeholderTabId !== null) {
+        await chrome.tabs.remove(placeholderTabId);
+      }
+    } catch {
+      // La ventana o pestana temporal ya no existe
+    }
+  }
+
+  if (failed > 0) {
+    showToast(t("toastWorkspaceOpenPartial", [String(opened), String(failed)]), true);
+    return;
+  }
+  closeIfPopup();
 }
 
 /**
  * Anade la pestana activa actual a un workspace existente.
  */
 async function addCurrentTabToWorkspace(workspaceId) {
-  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  let activeTab;
+  try {
+    [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  } catch {
+    activeTab = null;
+  }
   if (!activeTab?.url) return;
 
-  const target = state.workspaces.find((ws) => ws.id === workspaceId);
-  if (!target) return;
-
-  target.tabs = target.tabs || [];
-  target.tabs.push({
-    title: activeTab.title || activeTab.url,
-    url: activeTab.url,
-    favIconUrl: activeTab.favIconUrl || ""
+  const { ok } = await mutateWorkspaces((list) => {
+    const target = list.find((ws) => ws.id === workspaceId);
+    if (!target) return false;
+    target.tabs = Array.isArray(target.tabs) ? target.tabs : [];
+    target.tabs.push({
+      title: activeTab.title || activeTab.url,
+      url: activeTab.url,
+      favIconUrl: activeTab.favIconUrl || ""
+    });
+    return true;
   });
 
   state.collapsedWorkspaces.delete(workspaceId);
-  await saveWorkspaces();
   renderAll();
-  showToast(t("toastTabAddedToWorkspace"));
+  if (ok) showToast(t("toastTabAddedToWorkspace"));
 }
 
 /**
@@ -674,10 +781,14 @@ function renderWorkspacesView() {
     deleteBtn.title = t("deleteWorkspaceTitle");
     deleteBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>`;
     deleteBtn.addEventListener("click", async () => {
-      state.workspaces = state.workspaces.filter((item) => item.id !== ws.id);
-      await saveWorkspaces();
+      const { ok } = await mutateWorkspaces((list) => {
+        const idx = list.findIndex((item) => item.id === ws.id);
+        if (idx < 0) return false;
+        list.splice(idx, 1);
+        return true;
+      });
       renderAll();
-      showToast(t("toastWorkspaceDeleted"));
+      if (ok) showToast(t("toastWorkspaceDeleted"));
     });
 
     header.append(titleGroup, deleteBtn);
@@ -739,11 +850,20 @@ function renderWorkspacesView() {
         removeBtn.innerHTML = `&times;`;
         removeBtn.addEventListener("click", async (e) => {
           e.stopPropagation();
-          if (originalIndex >= 0) {
-            ws.tabs.splice(originalIndex, 1);
-            await saveWorkspaces();
-            renderAll();
-          }
+          await mutateWorkspaces((list) => {
+            const target = list.find((item) => item.id === ws.id);
+            if (!target || !Array.isArray(target.tabs)) return false;
+            // Usa el indice original si sigue apuntando a la misma URL; si otra instancia
+            // modifico la lista entretanto, busca la pestana por URL.
+            let idx = originalIndex;
+            if (target.tabs[idx]?.url !== savedTab.url) {
+              idx = target.tabs.findIndex((item) => item?.url === savedTab.url);
+            }
+            if (idx < 0) return false;
+            target.tabs.splice(idx, 1);
+            return true;
+          });
+          renderAll();
         });
 
         tabRow.append(tabTitle, removeBtn);
@@ -888,50 +1008,22 @@ async function handleImportJsonFile(file) {
   try {
     const raw = await file.text();
     const parsed = JSON.parse(raw);
-    const list = Array.isArray(parsed) ? parsed : parsed?.workspaces;
 
-    if (!Array.isArray(list)) {
-      throw new Error("Invalid format");
-    }
+    // Valida antes de tocar storage; si el formato es invalido lanza y no se modifica nada.
+    mergeImportedWorkspaces(parsed, []);
 
-    const validWorkspaces = [];
-    for (const item of list) {
-      if (!item || typeof item.name !== "string" || !Array.isArray(item.tabs)) {
-        throw new Error("Invalid workspace entry");
-      }
-      const cleanTabs = item.tabs
-        .filter((tabItem) => tabItem && typeof tabItem.url === "string" && tabItem.url.trim())
-        .map((tabItem) => ({
-          title: typeof tabItem.title === "string" ? tabItem.title : tabItem.url,
-          url: tabItem.url.trim(),
-          favIconUrl: typeof tabItem.favIconUrl === "string" ? tabItem.favIconUrl : ""
-        }));
+    let summary = { added: 0, skipped: 0 };
+    const { ok } = await mutateWorkspaces((list) => {
+      const merged = mergeImportedWorkspaces(parsed, list);
+      list.splice(0, list.length, ...merged.workspaces);
+      summary = merged;
+      return true;
+    });
+    if (!ok) return;
 
-      validWorkspaces.push({
-        id:
-          typeof item.id === "string" && item.id
-            ? item.id
-            : `ws_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        name: item.name.trim() || "Workspace",
-        color:
-          typeof item.color === "string" && item.color.startsWith("#")
-            ? item.color
-            : CONFIG.COLORS.PRIMARY,
-        createdAt: Number(item.createdAt) || Date.now(),
-        tabs: cleanTabs
-      });
-    }
-
-    const byId = new Map(state.workspaces.map((ws) => [ws.id, ws]));
-    for (const importedWs of validWorkspaces) {
-      byId.set(importedWs.id, importedWs);
-    }
-    state.workspaces = Array.from(byId.values());
-
-    await saveWorkspaces();
     renderAll();
     setActiveView("workspaces");
-    showToast(t("toastBackupImported", [String(validWorkspaces.length)]));
+    showToast(t("toastBackupImported", [String(summary.added)]));
   } catch {
     showToast(t("toastBackupError"), true);
   } finally {
@@ -1006,20 +1098,30 @@ function cacheDomReferences() {
 }
 
 function bindEvents() {
-  dom.btnSidePanel.addEventListener("click", async () => {
-    if (!chrome.sidePanel?.open) return;
-    try {
-      const currentWin = await chrome.windows.getCurrent();
-      await chrome.sidePanel.open({ windowId: currentWin.id });
-      window.close();
-    } catch {
-      // Ignora si el navegador restringe abrir sidePanel en ese contexto
+  dom.btnSidePanel.addEventListener("click", () => {
+    if (!chrome.sidePanel?.open || state.currentWindowId === null) {
+      showToast(t("toastSidePanelError"), true);
+      return;
     }
+    // Llamada sincrona (sin await previo) para conservar el user gesture que exige Chrome.
+    chrome.sidePanel
+      .open({ windowId: state.currentWindowId })
+      .then(() => closeIfPopup())
+      .catch(() => showToast(t("toastSidePanelError"), true));
   });
 
   dom.btnExport.addEventListener("click", exportWorkspacesToJson);
 
   dom.btnImport.addEventListener("click", () => {
+    if (VIEW_MODE === "popup") {
+      // El dialogo nativo de archivos hace perder el foco al popup y Chrome lo cierra
+      // antes de recibir el archivo. Se abre la interfaz en una pestana completa.
+      chrome.tabs
+        .create({ url: chrome.runtime.getURL("popup/index.html?view=tab&import=1"), active: true })
+        .then(() => window.close())
+        .catch(() => dom.importFileInput.click());
+      return;
+    }
     dom.importFileInput.click();
   });
 
@@ -1069,9 +1171,10 @@ function bindEvents() {
   });
 
   dom.btnSuspendInactive.addEventListener("click", async () => {
-    const res = await chrome.runtime.sendMessage({ type: "SUSPEND_INACTIVE_TABS" });
+    const res = await sendRuntimeMessage({ type: "SUSPEND_INACTIVE_TABS" });
     await refreshAll();
-    if (res?.suspendedCount > 0) {
+    if (!res) return;
+    if (res.suspendedCount > 0) {
       showToast(t("toastSuspendedCount", [String(res.suspendedCount)]));
     } else {
       showToast(t("toastNoTabsToSuspend"));
@@ -1079,12 +1182,19 @@ function bindEvents() {
   });
 
   dom.selectAutoSuspend.addEventListener("change", async () => {
+    const previous = state.autoSuspendMinutes;
     const minutes = Number(dom.selectAutoSuspend.value) || 0;
-    state.autoSuspendMinutes = minutes;
-    await chrome.runtime.sendMessage({
+    const res = await sendRuntimeMessage({
       type: "SET_AUTOSUSPEND_MINUTES",
       minutes
     });
+    if (res) {
+      state.autoSuspendMinutes = Number(res.autoSuspendMinutes) || 0;
+    } else {
+      // Revierte el selector para no mostrar un valor que no se guardo
+      state.autoSuspendMinutes = previous;
+      dom.selectAutoSuspend.value = String(previous);
+    }
   });
 
   dom.tabBtnOpen.addEventListener("click", () => setActiveView("open"));
@@ -1131,23 +1241,49 @@ function bindEvents() {
         favIconUrl: tab.favIconUrl || ""
       }));
 
-    if (tabsToSave.length === 0) return;
+    if (tabsToSave.length === 0) {
+      showToast(t("toastNoTabsSelected"), true);
+      return;
+    }
 
     const newWorkspace = {
-      id: `ws_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      name,
+      id: `ws_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+      name: name.slice(0, 48),
       color: state.selectedColor,
       createdAt: Date.now(),
       tabs: tabsToSave
     };
 
-    state.workspaces.unshift(newWorkspace);
-    await saveWorkspaces();
+    const { ok } = await mutateWorkspaces((list) => {
+      list.unshift(newWorkspace);
+      return true;
+    });
+    if (!ok) return;
+
     closeSaveWorkspaceModal();
     renderAll();
     setActiveView("workspaces");
     showToast(t("toastWorkspaceSaved"));
   });
+
+  // Sincroniza cambios hechos por otra instancia (popup / panel lateral / pestana).
+  if (chrome.storage?.onChanged) {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== "local") return;
+      let needsRender = false;
+      const wsChange = changes[CONFIG.STORAGE_KEYS.WORKSPACES];
+      if (wsChange) {
+        state.workspaces = Array.isArray(wsChange.newValue) ? wsChange.newValue : [];
+        needsRender = true;
+      }
+      const settingsChange = changes[CONFIG.STORAGE_KEYS.SETTINGS];
+      if (settingsChange?.newValue) {
+        state.autoSuspendMinutes = Number(settingsChange.newValue.autoSuspendMinutes) || 0;
+        dom.selectAutoSuspend.value = String(state.autoSuspendMinutes);
+      }
+      if (needsRender) renderAll();
+    });
+  }
 
   // Refresco en vivo con debounce si el usuario abre/cierra/suspende pestanas mientras el sidePanel esta abierto
   if (chrome.tabs?.onCreated) {
@@ -1169,10 +1305,14 @@ async function init() {
   cacheDomReferences();
   applyTranslations();
   setupFooterLinks();
-  await detectSidePanelContext();
+  await detectViewContext();
   await refreshAll();
   bindEvents();
   dom.searchInput?.focus();
+  if (VIEW_MODE === "tab" && URL_PARAMS.get("import") === "1") {
+    setActiveView("workspaces");
+    showToast(t("toastImportInTab"));
+  }
 }
 
 document.addEventListener("DOMContentLoaded", init);

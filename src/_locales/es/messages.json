@@ -4,7 +4,7 @@
     "description": "Nombre de la extensión"
   },
   "extDescription": {
-    "message": "Organiza pestañas en espacios de trabajo, suspende pestañas inactivas para ahorrar RAM y busca al instante. 100% gratis y open source.",
+    "message": "Organiza pestañas en espacios de trabajo, suspende las inactivas para ahorrar RAM y busca al instante. 100% gratis y open source.",
     "description": "Descripción de la extensión"
   },
   "searchPlaceholder": {
@@ -240,5 +240,43 @@
   "toastBackupError": {
     "message": "El archivo JSON no tiene un formato válido de ChalaTabs.",
     "description": "Error al importar respaldo"
+  },
+  "toastActionError": {
+    "message": "No se pudo completar la acción. Inténtalo de nuevo.",
+    "description": "Error genérico cuando falla una acción en segundo plano"
+  },
+  "toastSaveError": {
+    "message": "No se pudieron guardar los cambios (almacenamiento lleno o no disponible).",
+    "description": "Error al guardar workspaces en el almacenamiento"
+  },
+  "toastSidePanelError": {
+    "message": "No se pudo abrir el panel lateral en esta ventana.",
+    "description": "Error al abrir el panel lateral"
+  },
+  "toastNoTabsSelected": {
+    "message": "Selecciona al menos una pestaña para guardar.",
+    "description": "Validación cuando no hay pestañas marcadas en el modal"
+  },
+  "toastImportInTab": {
+    "message": "Pulsa Importar aquí para elegir tu archivo de respaldo.",
+    "description": "Indicación en la vista de página completa abierta para importar"
+  },
+  "toastWorkspaceOpenPartial": {
+    "message": "Se abrieron $OPENED$ pestañas; $FAILED$ no se pudieron abrir.",
+    "description": "Notificación cuando algunas pestañas del workspace fallan al abrirse",
+    "placeholders": {
+      "opened": {
+        "content": "$1",
+        "example": "5"
+      },
+      "failed": {
+        "content": "$2",
+        "example": "1"
+      }
+    }
+  },
+  "toastTabOpenError": {
+    "message": "La extensión no puede abrir esta página.",
+    "description": "Error cuando una pestaña guardada no se puede abrir"
   }
 }
