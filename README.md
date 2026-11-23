@@ -69,6 +69,42 @@ node tests/verify.mjs
 
 Cada versión se compila y empaqueta automáticamente en GitHub Actions al publicar una etiqueta ([build.yml](.github/workflows/build.yml)).
 
+## Estructura del Proyecto
+
+```text
+ChalaTabs/
+├── .github/workflows/build.yml   # Compilación, verificación y release en GitHub Actions
+├── dist/
+│   ├── README.md                 # Guía rápida de carga desde dist/
+│   ├── version                   # Versión actual (1.0.0)
+│   └── build/                    # Carpeta descomprimida y paquetes .zip generados
+├── docs/
+│   ├── index.html                # Documentación local
+│   └── README.md
+├── publish-extension/            # Utilidades de publicación para tiendas
+├── src/
+│   ├── _locales/{es,en}/         # Traducciones en español (por defecto) e inglés
+│   ├── icons/                    # Logotipo SVG e iconos PNG (16, 32, 48, 128)
+│   ├── popup/
+│   │   ├── index.html            # Interfaz de Popup y Panel Lateral (?view=sidepanel)
+│   │   ├── popup.js              # Buscador, Workspaces, suspensión y métricas de RAM
+│   │   ├── styles.css            # Estilos del gestor
+│   │   └── workspace-import.js   # Importación segura y sanitización de Workspaces
+│   ├── background.js             # Service worker MV3 (auto-suspensión, alarmas y badge)
+│   ├── config.js                 # Constantes, esquemas protegidos y enlace de donación
+│   └── manifest.json             # Manifiesto V3 (tabs, storage, alarms, sidePanel)
+├── store/
+│   ├── ficha-tienda.md           # Ficha para Microsoft Edge Add-ons
+│   ├── ficha-chrome-web-store.md # Ficha para Chrome Web Store
+│   ├── logo-300x300.png          # Logo de tienda (300×300)
+│   ├── promo-440x280.png         # Mosaico promocional (440×280)
+│   ├── destacada-1400x560.png    # Banner destacado (1400×560)
+│   ├── captura-*.png             # Capturas de pantalla (1280×800)
+│   └── paquetes/                 # Paquetes .zip para Chrome Web Store y Edge Add-ons
+├── tests/verify.mjs              # Suite de 17 verificaciones automatizadas
+└── tools/                        # Empaquetador MV3 (make-mv3.mjs, make-mv3.sh, make-clean.sh)
+```
+
 ## Hoja de ruta
 
 | Mejora | Qué aporta |
@@ -85,6 +121,14 @@ ChalaTabs es 100% gratuito y de código abierto. Si te resulta útil, puedes hac
 
 ## Suite Chala y licencia
 
-ChalaTabs forma parte de la **Suite Chala** de herramientas gratuitas y privadas junto a [Chalablock](https://github.com/joelchala/Chalablock) y [ChalaVPN](https://github.com/joelchala/ChalaVPN).
+ChalaTabs forma parte de la **Suite Chala** de herramientas para navegador enfocadas en privacidad, rendimiento y productividad:
+
+- **[Chalablock](https://github.com/joelchala/Chalablock)** — Bloqueador de anuncios y rastreadores ligero (Manifest V3)
+- **[ChalaCookiesEdit](https://github.com/joelchala/ChalaCookiesEdit)** — Editor de cookies local con soporte CHIPS, incógnito, bloqueo e inspector JWT
+- **[ChalaDev](https://github.com/joelchala/ChalaDev)** — Suite de utilidades locales en el Side Panel para desarrolladores y diseñadores UI/UX
+- **[ChalaReader](https://github.com/joelchala/ChalaReader)** — Modo lectura limpio con Shadow DOM, temas visuales, Markdown, PDF y guardado offline
+- **[ChalaScrape](https://github.com/joelchala/ChalaScrape)** — Extractor visual de tablas, listas y tarjetas web a Excel (`.xlsx`) y CSV
+- **[ChalaTabs](https://github.com/joelchala/ChalaTabs)** — Gestor de pestañas en espacios de trabajo, ahorro de RAM y buscador instantáneo
+- **[ChalaVPN](https://github.com/joelchala/ChalaVPN)** — Proxy HTTPS/SOCKS5 con protección contra fugas de WebRTC
 
 Todo el proyecto se distribuye bajo la [Licencia MIT](LICENSE.txt): puedes usarlo, estudiarlo, modificarlo y redistribuirlo libremente.
