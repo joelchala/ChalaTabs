@@ -15,9 +15,11 @@ Rápido, privado y pensado para quienes navegan con orden y eficiencia.
 
 ChalaTabs organiza tus pestañas en **Espacios de Trabajo (Workspaces)**, suspende pestañas inactivas para liberar memoria RAM mediante la API nativa `chrome.tabs.discard` y te permite saltar al instante a cualquier pestaña abierta o guardada. Funciona con Manifest V3 sin procesos externos ni servidores a los que se envíen tus datos.
 
-- **Autor y mantenimiento:** Joel Chala
+- **Sitio oficial (Suite Chala):** [chaladev.site](https://chaladev.site/)
+- **Autor y mantenimiento:** Joel Chala ([info@chaladev.site](mailto:info@chaladev.site))
+- **Tienda oficial:** [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/chalatabs/jchfnpmefnlklneipfbcaephmdhdogfa)
 - **Licencia:** [MIT](LICENSE.txt)
-- **Privacidad:** [no recopila ningún dato](PRIVACY.md)
+- **Privacidad:** [no recopila ningún dato](PRIVACY.md) · [chaladev.site/#privacidad](https://chaladev.site/#privacidad)
 
 ## Características
 
@@ -34,7 +36,9 @@ ChalaTabs organiza tus pestañas en **Espacios de Trabajo (Workspaces)**, suspen
 
 ## Instalación
 
-ChalaTabs se distribuye en paquetes listos para cargar o compilar localmente:
+- **Tienda oficial (Microsoft Edge Add-ons):** [ChalaTabs en Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/chalatabs/jchfnpmefnlklneipfbcaephmdhdogfa)
+
+Para instalación manual o desarrollo:
 
 1. Descarga una versión compilada desde las [versiones publicadas](https://github.com/joelchala/ChalaTabs/releases) o genera la carpeta localmente (ver más abajo).
 2. Abre `chrome://extensions` (Chrome) o `edge://extensions` (Edge).
@@ -107,11 +111,12 @@ ChalaTabs/
 
 ## Hoja de ruta
 
-| Mejora | Qué aporta |
-|---|---|
-| Publicación en Chrome Web Store y Edge Add-ons | Instalación con un clic y actualizaciones automáticas |
-| Atajos de teclado globales configurables | Suspender pestañas o abrir el buscador directo desde cualquier ventana |
-| Estadísticas históricas locales de RAM | Registro opcional local del ahorro acumulado |
+| Mejora | Estado | Qué aporta |
+|---|---|---|
+| Publicación en Microsoft Edge Add-ons | Publicado | Instalación con un clic y actualizaciones automáticas |
+| Publicación en Chrome Web Store | Planificado | Expansión oficial a Chrome Web Store |
+| Atajos de teclado globales configurables | Planificado | Suspender pestañas o abrir el buscador directo desde cualquier ventana |
+| Estadísticas históricas locales de RAM | Planificado | Registro opcional local del ahorro acumulado |
 
 Las sugerencias son bienvenidas en los [reportes del repositorio](https://github.com/joelchala/ChalaTabs/issues).
 
@@ -121,7 +126,7 @@ ChalaTabs es 100% gratuito y de código abierto. Si te resulta útil, puedes hac
 
 ## Suite Chala y licencia
 
-ChalaTabs forma parte de la **Suite Chala** de herramientas para navegador enfocadas en privacidad, rendimiento y productividad:
+**ChalaTabs** forma parte de la **Suite Chala** ([chaladev.site](https://chaladev.site/)) de herramientas para navegador enfocadas en privacidad, rendimiento y productividad:
 
 - **[Chalablock](https://github.com/joelchala/Chalablock)** — Bloqueador de anuncios y rastreadores ligero (Manifest V3)
 - **[ChalaCookiesEdit](https://github.com/joelchala/ChalaCookiesEdit)** — Editor de cookies local con soporte CHIPS, incógnito, bloqueo e inspector JWT
