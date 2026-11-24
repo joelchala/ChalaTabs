@@ -5,7 +5,7 @@ ChalaTabs
 </h1>
 
 <p align="center">
-Gestor de pestañas en espacios de trabajo, ahorro de RAM y buscador instantáneo para Chrome, Edge y otros navegadores Chromium.<br>
+Gestor de pestañas en espacios de trabajo, ahorro de RAM y buscador instantáneo para Chrome, Edge, Mozilla Firefox y otros navegadores Chromium.<br>
 Rápido, privado y pensado para quienes navegan con orden y eficiencia.
 </p>
 
@@ -17,7 +17,7 @@ ChalaTabs organiza tus pestañas en **Espacios de Trabajo (Workspaces)**, suspen
 
 - **Sitio oficial (Suite Chala):** [chaladev.site](https://chaladev.site/)
 - **Autor y mantenimiento:** Joel Chala ([info@chaladev.site](mailto:info@chaladev.site))
-- **Tienda oficial:** [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/chalatabs/jchfnpmefnlklneipfbcaephmdhdogfa)
+- **Tiendas:** [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/chalatabs/jchfnpmefnlklneipfbcaephmdhdogfa) · Mozilla Firefox Add-ons / AMO *(paquete `.firefox.zip` validado con 0 errores, en cola de publicación)* · Chrome Web Store *(pendiente de cupo)*
 - **Licencia:** [MIT](LICENSE.txt)
 - **Privacidad:** [no recopila ningún dato](PRIVACY.md) · [chaladev.site/#privacidad](https://chaladev.site/#privacidad)
 
@@ -28,7 +28,7 @@ ChalaTabs organiza tus pestañas en **Espacios de Trabajo (Workspaces)**, suspen
 - **Suspensión inteligente de pestañas:** suspende con un clic todas las pestañas inactivas usando `chrome.tabs.discard(tabId)` sin romper URLs ni depender de páginas externas.
 - **Auto-suspensión configurable:** opción mediante `chrome.alarms` (`15`, `30`, `60` minutos o desactivado) excluyendo pestañas fijadas (`pinned`), reproduciendo audio (`audible`) o activas.
 - **Indicador de memoria RAM ahorrada:** contador en tiempo real de pestañas activas vs. suspendidas y memoria estimada liberada.
-- **Popup y Panel Lateral (`sidePanel`):** usa ChalaTabs como popup ágil o fíjalo en el panel lateral de Chrome/Edge.
+- **Popup y Panel Lateral (`sidePanel` / `sidebar_action`):** usa ChalaTabs como popup ágil o fíjalo en el panel lateral de Chrome/Edge (`sidePanel`) y Mozilla Firefox `>= 113` (`sidebar_action`).
 - **Respaldo local JSON:** exporta e importa todos tus Workspaces en archivos `.json` locales.
 - **Permisos mínimos indispensables:** solo solicita `tabs`, `storage`, `alarms` y `sidePanel` (sin `<all_urls>` ni permisos invasivos).
 - **Bilingüe (`_locales`):** español (`es`, predeterminado) e inglés (`en`).
@@ -37,6 +37,7 @@ ChalaTabs organiza tus pestañas en **Espacios de Trabajo (Workspaces)**, suspen
 ## Instalación
 
 - **Tienda oficial (Microsoft Edge Add-ons):** [ChalaTabs en Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/chalatabs/jchfnpmefnlklneipfbcaephmdhdogfa)
+- **Mozilla Firefox (AMO):** paquete `store/paquetes/ChalaTabs_1.0.0.firefox.zip` (`chalatabs@chaladev.site`) validado en AMO con 0 errores, en cola de publicación; carga temporal en `about:debugging#/runtime/this-firefox`
 
 Para instalación manual o desarrollo:
 
@@ -104,7 +105,7 @@ ChalaTabs/
 │   ├── promo-440x280.png         # Mosaico promocional (440×280)
 │   ├── destacada-1400x560.png    # Banner destacado (1400×560)
 │   ├── captura-*.png             # Capturas de pantalla (1280×800)
-│   └── paquetes/                 # Paquetes .zip para Chrome Web Store y Edge Add-ons
+│   └── paquetes/                 # Paquetes .zip para Chrome Web Store, Edge Add-ons y Firefox AMO
 ├── tests/verify.mjs              # Suite de 17 verificaciones automatizadas
 └── tools/                        # Empaquetador MV3 (make-mv3.mjs, make-mv3.sh, make-clean.sh)
 ```
@@ -114,6 +115,7 @@ ChalaTabs/
 | Mejora | Estado | Qué aporta |
 |---|---|---|
 | Publicación en Microsoft Edge Add-ons | Publicado | Instalación con un clic y actualizaciones automáticas |
+| Publicación en Mozilla Firefox Add-ons (AMO) | Validado (0 errores) | Empaquetado MV3 con `sidebar_action` listo y en cola de publicación |
 | Publicación en Chrome Web Store | Planificado | Expansión oficial a Chrome Web Store |
 | Atajos de teclado globales configurables | Planificado | Suspender pestañas o abrir el buscador directo desde cualquier ventana |
 | Estadísticas históricas locales de RAM | Planificado | Registro opcional local del ahorro acumulado |
