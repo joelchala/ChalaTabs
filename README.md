@@ -63,7 +63,7 @@ También puedes usar el script Bash:
 bash tools/make-mv3.sh
 ```
 
-En una compilación local, la extensión desempaquetada queda en `dist/build/ChalaTabs.chromium/` y los paquetes listos para subir a tiendas quedan en `store/paquetes/ChalaTabs_1.0.0.chromium.zip` y `store/paquetes/ChalaTabs_1.0.0.edge.zip`. El código fuente de la extensión está en [`src/`](src/).
+En una compilación local, la extensión desempaquetada queda en `dist/build/ChalaTabs.chromium/` y los paquetes listos para subir a tiendas quedan en `store/paquetes/ChalaTabs_1.0.0.chromium.zip`, `store/paquetes/ChalaTabs_1.0.0.edge.zip` y `store/paquetes/ChalaTabs_1.0.0.firefox.zip` (`sidebar_action` dinámico para Mozilla Firefox AMO sin duplicar `src/`). El código fuente único de la extensión está en [`src/`](src/).
 
 Para ejecutar las pruebas automatizadas:
 

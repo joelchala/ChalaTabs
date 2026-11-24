@@ -1,6 +1,6 @@
 name: ChalaTabs build
 
-# Builds the Chromium and Edge packages and attaches them to a GitHub release.
+# Builds the Chromium, Edge, and Firefox (AMO) packages and attaches them to a GitHub release.
 # Runs when a version tag (x.y.z) is pushed, or manually from the Actions tab.
 on:
   push:

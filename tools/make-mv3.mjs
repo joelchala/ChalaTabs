@@ -50,9 +50,88 @@ function collectFiles(dirPath, baseDir = dirPath) {
 }
 
 /**
- * Crea un archivo ZIP estandar compatible con Chrome Web Store y Edge Add-ons.
+ * Extrae una entrada de archivo desde un Buffer ZIP (para verificacion de paquetes).
  */
-function buildZipBuffer(sourceDir) {
+export function extractZipEntry(zipBuffer, targetName) {
+  let eocdOffset = -1;
+  for (let i = zipBuffer.length - 22; i >= Math.max(0, zipBuffer.length - 65557); i -= 1) {
+    if (zipBuffer.readUInt32LE(i) === 0x06054b50) {
+      eocdOffset = i;
+      break;
+    }
+  }
+  if (eocdOffset === -1) {
+    throw new Error("Invalid ZIP: missing EOCD");
+  }
+  const totalEntries = zipBuffer.readUInt16LE(eocdOffset + 10);
+  const cdOffset = zipBuffer.readUInt32LE(eocdOffset + 16);
+
+  let cursor = cdOffset;
+  for (let i = 0; i < totalEntries; i += 1) {
+    if (zipBuffer.readUInt32LE(cursor) !== 0x02014b50) {
+      throw new Error("Invalid ZIP: corrupt Central Directory");
+    }
+    const method = zipBuffer.readUInt16LE(cursor + 10);
+    const compSize = zipBuffer.readUInt32LE(cursor + 20);
+    const nameLen = zipBuffer.readUInt16LE(cursor + 28);
+    const extraLen = zipBuffer.readUInt16LE(cursor + 30);
+    const commentLen = zipBuffer.readUInt16LE(cursor + 32);
+    const localOffset = zipBuffer.readUInt32LE(cursor + 42);
+    const entryName = zipBuffer.subarray(cursor + 46, cursor + 46 + nameLen).toString("utf8");
+
+    if (entryName === targetName) {
+      const lfhNameLen = zipBuffer.readUInt16LE(localOffset + 26);
+      const lfhExtraLen = zipBuffer.readUInt16LE(localOffset + 28);
+      const dataStart = localOffset + 30 + lfhNameLen + lfhExtraLen;
+      const compData = zipBuffer.subarray(dataStart, dataStart + compSize);
+      return method === 8 ? zlib.inflateRawSync(compData) : Buffer.from(compData);
+    }
+    cursor += 46 + nameLen + extraLen + commentLen;
+  }
+  return null;
+}
+
+/**
+ * Transforma un manifiesto MV3 de ChalaTabs a formato compatible con Mozilla Firefox (AMO).
+ */
+export function toFirefoxManifest(manifest, geckoId = "chalatabs@chaladev.site") {
+  const ff = structuredClone(manifest);
+  ff.browser_specific_settings = {
+    ...(ff.browser_specific_settings || {}),
+    gecko: {
+      ...(ff.browser_specific_settings?.gecko || {}),
+      id: geckoId,
+      strict_min_version: "113.0",
+      data_collection_permissions: {
+        required: ["none"]
+      }
+    }
+  };
+  if (ff.background && ff.background.service_worker) {
+    const { service_worker: sw, ...rest } = ff.background;
+    ff.background = {
+      scripts: [sw],
+      ...rest
+    };
+  }
+  if (ff.side_panel?.default_path) {
+    ff.sidebar_action = {
+      default_panel: ff.side_panel.default_path,
+      default_title: ff.action?.default_title || "__MSG_extName__",
+      default_icon: ff.action?.default_icon || ff.icons
+    };
+    delete ff.side_panel;
+  }
+  if (Array.isArray(ff.permissions)) {
+    ff.permissions = ff.permissions.filter((perm) => perm !== "sidePanel");
+  }
+  return ff;
+}
+
+/**
+ * Crea un archivo ZIP estandar compatible con Chrome Web Store, Edge Add-ons y Firefox AMO.
+ */
+function buildZipBuffer(sourceDir, fileOverrides = {}) {
   const files = collectFiles(sourceDir);
   const localParts = [];
   const centralParts = [];
@@ -69,7 +148,9 @@ function buildZipBuffer(sourceDir) {
     (now.getDate() & 0x1f);
 
   for (const file of files) {
-    const raw = fs.readFileSync(file.abs);
+    const raw = Object.prototype.hasOwnProperty.call(fileOverrides, file.rel)
+      ? fileOverrides[file.rel]
+      : fs.readFileSync(file.abs);
     const compressed = zlib.deflateRawSync(raw, { level: 9 });
     const nameBuf = Buffer.from(file.rel, "utf8");
     const crc = crc32(raw);
@@ -149,6 +230,10 @@ function main() {
   fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 
   const zipBuffer = buildZipBuffer(UNPACKED_DIR);
+  const firefoxManifest = toFirefoxManifest(manifest);
+  const firefoxZipBuffer = buildZipBuffer(UNPACKED_DIR, {
+    "manifest.json": Buffer.from(`${JSON.stringify(firefoxManifest, null, 2)}\n`, "utf8")
+  });
 
   fs.mkdirSync(PACKAGES_DIR, { recursive: true });
   fs.mkdirSync(BUILD_DIR, { recursive: true });
@@ -156,19 +241,29 @@ function main() {
   const outputs = [
     path.join(PACKAGES_DIR, `ChalaTabs_${version}.chromium.zip`),
     path.join(PACKAGES_DIR, `ChalaTabs_${version}.edge.zip`),
+    path.join(PACKAGES_DIR, `ChalaTabs_${version}.firefox.zip`),
     path.join(BUILD_DIR, `ChalaTabs_${version}.chromium.zip`),
-    path.join(BUILD_DIR, `ChalaTabs_${version}.edge.zip`)
+    path.join(BUILD_DIR, `ChalaTabs_${version}.edge.zip`),
+    path.join(BUILD_DIR, `ChalaTabs_${version}.firefox.zip`)
   ];
 
   for (const outPath of outputs) {
-    fs.writeFileSync(outPath, zipBuffer);
+    const buf = outPath.endsWith(".firefox.zip") ? firefoxZipBuffer : zipBuffer;
+    fs.writeFileSync(outPath, buf);
   }
 
   console.log(`Built unpacked extension: ${UNPACKED_DIR}`);
-  console.log(`Created Chromium & Edge packages for version ${version}:`);
+  console.log(`Created Chromium, Edge, and Firefox AMO packages for version ${version}:`);
   for (const outPath of outputs) {
     console.log(`  - ${path.relative(ROOT, outPath)}`);
   }
 }
 
-main();
+const isDirectRun =
+  Boolean(process.argv[1]) &&
+  path.resolve(fileURLToPath(import.meta.url)).toLowerCase() ===
+    path.resolve(process.argv[1]).toLowerCase();
+
+if (isDirectRun) {
+  main();
+}

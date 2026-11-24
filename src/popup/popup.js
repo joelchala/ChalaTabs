@@ -1099,6 +1099,13 @@ function cacheDomReferences() {
 
 function bindEvents() {
   dom.btnSidePanel.addEventListener("click", () => {
+    const firefoxSidebar = globalThis.browser?.sidebarAction || chrome.sidebarAction;
+    if (firefoxSidebar?.open) {
+      Promise.resolve(firefoxSidebar.open())
+        .then(() => closeIfPopup())
+        .catch(() => showToast(t("toastSidePanelError"), true));
+      return;
+    }
     if (!chrome.sidePanel?.open || state.currentWindowId === null) {
       showToast(t("toastSidePanelError"), true);
       return;

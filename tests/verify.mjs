@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { extractZipEntry } from "../tools/make-mv3.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -176,10 +177,29 @@ async function run() {
 
     const chromiumZip = path.join(ROOT, "store", "paquetes", `ChalaTabs_${version}.chromium.zip`);
     const edgeZip = path.join(ROOT, "store", "paquetes", `ChalaTabs_${version}.edge.zip`);
+    const firefoxZip = path.join(ROOT, "store", "paquetes", `ChalaTabs_${version}.firefox.zip`);
     assert.ok(fs.existsSync(chromiumZip), `Missing package: ${chromiumZip}`);
     assert.ok(fs.existsSync(edgeZip), `Missing package: ${edgeZip}`);
+    assert.ok(fs.existsSync(firefoxZip), `Missing package: ${firefoxZip}`);
     assert.ok(fs.statSync(chromiumZip).size > 1000, "Chromium zip package appears empty");
     assert.ok(fs.statSync(edgeZip).size > 1000, "Edge zip package appears empty");
+    assert.ok(fs.statSync(firefoxZip).size > 1000, "Firefox zip package appears empty");
+
+    const ffManifestBuf = extractZipEntry(fs.readFileSync(firefoxZip), "manifest.json");
+    assert.ok(ffManifestBuf, "Missing manifest.json inside Firefox ZIP");
+    const ffManifest = JSON.parse(ffManifestBuf.toString("utf8"));
+    assert.equal(ffManifest.manifest_version, 3);
+    assert.equal(ffManifest.version, version);
+    assert.equal(ffManifest.browser_specific_settings?.gecko?.id, "chalatabs@chaladev.site");
+    assert.equal(ffManifest.browser_specific_settings?.gecko?.strict_min_version, "113.0");
+    assert.deepEqual(ffManifest.browser_specific_settings?.gecko?.data_collection_permissions, {
+      required: ["none"]
+    });
+    assert.deepEqual(ffManifest.background?.scripts, ["background.js"]);
+    assert.equal(ffManifest.background?.service_worker, undefined);
+    assert.equal(ffManifest.sidebar_action?.default_panel, "popup/index.html?view=sidepanel");
+    assert.equal(ffManifest.side_panel, undefined);
+    assert.equal(ffManifest.permissions?.includes("sidePanel"), false);
 
     assert.ok(fs.existsSync(path.join(ROOT, "store", "ficha-tienda.md")), "Missing store/ficha-tienda.md");
     assert.ok(fs.existsSync(path.join(ROOT, "store", "ficha-chrome-web-store.md")), "Missing store/ficha-chrome-web-store.md");
