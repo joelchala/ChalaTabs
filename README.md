@@ -17,7 +17,7 @@ ChalaTabs organiza tus pestañas en **Espacios de Trabajo (Workspaces)**, suspen
 
 - **Sitio oficial (Suite Chala):** [chaladev.site](https://chaladev.site/)
 - **Autor y mantenimiento:** Joel Chala ([info@chaladev.site](mailto:info@chaladev.site))
-- **Tiendas:** [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/chalatabs/jchfnpmefnlklneipfbcaephmdhdogfa) · Mozilla Firefox Add-ons / AMO *(paquete `.firefox.zip` validado con 0 errores, en cola de publicación)* · Chrome Web Store *(pendiente de cupo)*
+- **Tiendas:** [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/chalatabs/jchfnpmefnlklneipfbcaephmdhdogfa) · Mozilla Firefox Add-ons / AMO (`chalatabs`, *en revisión*) · Chrome Web Store *(pendiente de cupo)*
 - **Licencia:** [MIT](LICENSE.txt)
 - **Privacidad:** [no recopila ningún dato](PRIVACY.md) · [chaladev.site/#privacidad](https://chaladev.site/#privacidad)
 
@@ -37,7 +37,7 @@ ChalaTabs organiza tus pestañas en **Espacios de Trabajo (Workspaces)**, suspen
 ## Instalación
 
 - **Tienda oficial (Microsoft Edge Add-ons):** [ChalaTabs en Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/chalatabs/jchfnpmefnlklneipfbcaephmdhdogfa)
-- **Mozilla Firefox (AMO):** paquete `store/paquetes/ChalaTabs_1.0.0.firefox.zip` (`chalatabs@chaladev.site`) validado en AMO con 0 errores, en cola de publicación; carga temporal en `about:debugging#/runtime/this-firefox`
+- **Mozilla Firefox (AMO):** envío registrado en revisión (`chalatabs`, ID `3140533`, `chalatabs@chaladev.site`); paquete `store/paquetes/ChalaTabs_1.0.0.firefox.zip` también cargable de forma temporal en `about:debugging#/runtime/this-firefox`
 
 Para instalación manual o desarrollo:
 
@@ -115,7 +115,7 @@ ChalaTabs/
 | Mejora | Estado | Qué aporta |
 |---|---|---|
 | Publicación en Microsoft Edge Add-ons | Publicado | Instalación con un clic y actualizaciones automáticas |
-| Publicación en Mozilla Firefox Add-ons (AMO) | Validado (0 errores) | Empaquetado MV3 con `sidebar_action` listo y en cola de publicación |
+| Publicación en Mozilla Firefox Add-ons (AMO) | En revisión | Envío `1.0.0` registrado (`chalatabs`, ID `3140533`) con `sidebar_action` desde `src/` |
 | Publicación en Chrome Web Store | Planificado | Expansión oficial a Chrome Web Store |
 | Atajos de teclado globales configurables | Planificado | Suspender pestañas o abrir el buscador directo desde cualquier ventana |
 | Estadísticas históricas locales de RAM | Planificado | Registro opcional local del ahorro acumulado |
