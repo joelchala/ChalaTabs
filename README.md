@@ -5,7 +5,7 @@ ChalaTabs
 </h1>
 
 <p align="center">
-Gestor de pestañas en espacios de trabajo, ahorro de RAM y buscador instantáneo para Chrome, Edge, Mozilla Firefox y otros navegadores Chromium.<br>
+Gestor de pestañas en espacios de trabajo, ahorro de RAM y buscador instantáneo para Chrome, Edge, Opera, Mozilla Firefox y otros navegadores Chromium.<br>
 Rápido, privado y pensado para quienes navegan con orden y eficiencia.
 </p>
 
@@ -17,7 +17,7 @@ ChalaTabs organiza tus pestañas en **Espacios de Trabajo (Workspaces)**, suspen
 
 - **Sitio oficial (Suite Chala):** [chaladev.site](https://chaladev.site/)
 - **Autor y mantenimiento:** Joel Chala ([info@chaladev.site](mailto:info@chaladev.site))
-- **Tiendas:** [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/chalatabs/jchfnpmefnlklneipfbcaephmdhdogfa) · Mozilla Firefox Add-ons / AMO (`chalatabs`, *en revisión*) · Chrome Web Store *(pendiente de cupo)*
+- **Tiendas:** [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/chalatabs/jchfnpmefnlklneipfbcaephmdhdogfa) · Mozilla Firefox Add-ons / AMO (`chalatabs`, *en revisión*) · [Opera Add-ons](https://addons.opera.com/developer/) *(en preparación)* · Chrome Web Store *(pendiente de cupo)*
 - **Licencia:** [MIT](LICENSE.txt)
 - **Privacidad:** [no recopila ningún dato](PRIVACY.md) · [chaladev.site/#privacidad](https://chaladev.site/#privacidad)
 
@@ -37,6 +37,7 @@ ChalaTabs organiza tus pestañas en **Espacios de Trabajo (Workspaces)**, suspen
 ## Instalación
 
 - **Tienda oficial (Microsoft Edge Add-ons):** [ChalaTabs en Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/chalatabs/jchfnpmefnlklneipfbcaephmdhdogfa)
+- **Opera Add-ons:** [Complementos de Opera](https://addons.opera.com/developer/) *(en preparación; compatible con `store/paquetes/ChalaTabs_1.0.0.chromium.zip`)*
 - **Mozilla Firefox (AMO):** envío registrado en revisión (`chalatabs`, ID `3140533`, `chalatabs@chaladev.site`); paquete `store/paquetes/ChalaTabs_1.0.0.firefox.zip` también cargable de forma temporal en `about:debugging#/runtime/this-firefox`
 
 Para instalación manual o desarrollo:
@@ -117,6 +118,7 @@ ChalaTabs/
 | Publicación en Microsoft Edge Add-ons | Publicado | Instalación con un clic y actualizaciones automáticas |
 | Publicación en Mozilla Firefox Add-ons (AMO) | En revisión | Envío `1.0.0` registrado (`chalatabs`, ID `3140533`) con `sidebar_action` desde `src/` |
 | Publicación en Chrome Web Store | Planificado | Expansión oficial a Chrome Web Store |
+| Publicación en Opera Add-ons | En preparación | Distribución en [addons.opera.com](https://addons.opera.com/developer/) con `ChalaTabs_1.0.0.chromium.zip` |
 | Atajos de teclado globales configurables | Planificado | Suspender pestañas o abrir el buscador directo desde cualquier ventana |
 | Estadísticas históricas locales de RAM | Planificado | Registro opcional local del ahorro acumulado |
 
@@ -136,6 +138,7 @@ ChalaTabs es 100% gratuito y de código abierto. Si te resulta útil, puedes hac
 - **[ChalaReader](https://github.com/joelchala/ChalaReader)** — Modo lectura limpio con Shadow DOM, temas visuales, Markdown, PDF y guardado offline
 - **[ChalaScrape](https://github.com/joelchala/ChalaScrape)** — Extractor visual de tablas, listas y tarjetas web a Excel (`.xlsx`) y CSV
 - **[ChalaTabs](https://github.com/joelchala/ChalaTabs)** — Gestor de pestañas en espacios de trabajo, ahorro de RAM y buscador instantáneo
-- **[ChalaVPN](https://github.com/joelchala/ChalaVPN)** — Proxy HTTPS/SOCKS5 con protección contra fugas de WebRTC
+- **[ChalaVoice](https://github.com/joelchala/ChalaVoice)** — Lector en voz alta 100% local con Popup, Mini Barra Flotante, Modo Inspector y lector de libros (`.epub`, `.md`, `.txt`)
+- **[ChalaVPN](https://github.com/joelchala/ChalaVPN)** — Proxy PAC seguro por país con rotación automática y protección WebRTC
 
 Todo el proyecto se distribuye bajo la [Licencia MIT](LICENSE.txt): puedes usarlo, estudiarlo, modificarlo y redistribuirlo libremente.
